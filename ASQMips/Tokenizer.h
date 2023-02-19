@@ -101,6 +101,6 @@ struct ARLib::PrintInfo<Token> {
     constexpr PrintInfo(const Token& token) noexcept : m_token(token) {}
     String repr() const {
         return Printer::format("Token {{ {} \"{}\", in {} at {}:{} }}", enum_to_str_view(m_token.kind()),
-                               m_token.token(), m_token.source_file(), m_token.line(), m_token.column());
+                               m_token.token(), m_token.source_file(), m_token.line() + 1, m_token.column());
     }
 };

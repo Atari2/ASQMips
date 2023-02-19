@@ -52,18 +52,19 @@ tit Parser::parse_section_change(tit it, tit end, Section& section) {
     return it;
 }
 
-uint8_t Parser::m_rom_data[32768]{};
+uint8_t Parser::m_ro_data[32768]{};
+uint8_t Parser::m_code_data[32768]{};
 
 tit Parser::parse_comma_separated_list(tit it, tit end, size_t value_size) {
     while (assert_next_one_of(it, end, {TokenKind::Integer, TokenKind::Real})) {
         const auto& tok = *it;
         if (tok.kind() == TokenKind::Integer) {
             uint64_t val = StrViewToInt(tok.token()) & ((1ull << (value_size * CHAR_BIT)) - 1);
-            memcpy(m_rom_data + current_address, &val, value_size);
+            memcpy(m_ro_data + current_address, &val, value_size);
             current_address += value_size;
         } else {
             double val = StrViewToDouble(tok.token());
-            memcpy(m_rom_data + current_address, &val, value_size);
+            memcpy(m_ro_data + current_address, &val, value_size);
             current_address += value_size;
         }
         ++it;
@@ -73,10 +74,13 @@ tit Parser::parse_comma_separated_list(tit it, tit end, size_t value_size) {
     return it;
 }
 
-static uint64_t align_address(uint64_t val, uint64_t off, uint64_t align = sizeof(uint64_t)) {
-    uint64_t newval = val + off;
-    if (newval < align) return align;
-    if (uint64_t disp = newval % align; disp != 0) { newval += (align - disp); }
+template <Integral T>
+static T align_address(T val, uint64_t off, uint64_t align = sizeof(uint64_t)) {
+    T align_v = static_cast<T>(align);
+    T off_v = static_cast<T>(off);
+    T newval = val + off_v;
+    if (newval < align_v) return align_v;
+    if (T disp = newval % align_v; disp != 0) { newval += (align_v - disp); }
     return newval;
 }
 
@@ -97,12 +101,20 @@ tit Parser::parse_directive(tit it, tit end, Section& section) {
         break;
     case DirectiveType::org:
         if (!assert_next_token(++it, end, TokenKind::Integer)) return it;
-        current_address = StrViewToInt((*it).token());
+        if (section == Section::Data) {
+            current_address = StrViewToInt((*it).token());
+        } else {
+            current_pc = StrViewToInt((*it).token());
+        }
         ++it;
         break;
     case DirectiveType::align:
         if (!assert_next_token(++it, end, TokenKind::Integer)) return it;
-        current_address = align_address(current_address, 0, StrViewToInt((*it).token()));
+        if (section == Section::Data) {
+            current_address = align_address(current_address, 0, StrViewToInt((*it).token()));
+        } else {
+            current_pc = align_address(current_pc, 0, StrViewToInt((*it).token()));
+        }
         ++it;
         break;
     case DirectiveType::space:
@@ -112,13 +124,14 @@ tit Parser::parse_directive(tit it, tit end, Section& section) {
         break;
     case DirectiveType::ascii:
         if (!assert_next_token(++it, end, TokenKind::String)) return it;
-        memcpy(m_rom_data + current_address, (*it).token().data(), (*it).token().length());
+        memcpy(m_ro_data + current_address, (*it).token().data(), (*it).token().length());
         current_address = align_address(current_address, (*it).token().length());
         ++it;
         break;
     case DirectiveType::asciiz:
         if (!assert_next_token(++it, end, TokenKind::String)) return it;
-        memcpy(m_rom_data + current_address, (*it).token().data(), (*it).token().length() + 1);
+        memcpy(m_ro_data + current_address, (*it).token().data(), (*it).token().length());
+        m_ro_data[current_address + (*it).token().length()] = '\0';
         current_address = align_address(current_address, (*it).token().length() + 1);
         ++it;
         break;
@@ -146,9 +159,99 @@ tit Parser::parse_directive(tit it, tit end, Section& section) {
     return it;
 }
 
+template <>
+struct ARLib::cxpr::Hasher<ARLib::String> {
+    constexpr uint32_t operator()(const String& str) const { return crc32::calculate(str.view()); }
+};
+
 tit Parser::parse_instruction(tit begin, tit end) {
     auto it = begin;
+    const auto& tok = *it;
     ++it;
+    auto ins_name = tok.token().extract_string();
+    if ((*it).kind() == TokenKind::Dot) {
+        ++it;
+        if (!assert_next_token(it, end, TokenKind::Identifier)) return it;
+        ins_name += "."_s + (*it).token().extract_string();
+        ++it;
+    }
+    auto instit =
+    instruction_map.find(ins_name, [](const auto& inst, const String& name) { return inst.name == name.view(); });
+    if (instit == instruction_map.end()) {
+        m_tokenizer.print_error("invalid instruction", tok);
+        return it;
+    }
+    const auto& inst = (*instit).val;
+    InstructionData data{inst};
+    data.pc_address = current_pc;
+    auto add_immediate = [&](const Token& arg, Immediate& imm, size_t idx) {
+        switch (arg.kind()) {
+        case TokenKind::Integer:
+            imm = StrViewToInt(arg.token());
+            break;
+        case TokenKind::Real:
+            imm = StrViewToDouble(arg.token());
+            break;
+        case TokenKind::Identifier:
+            imm = arg.token();
+            break;
+        }
+        ++it;
+    };
+    auto is_register_floating_point = [](RegisterEnum reg) {
+        return (reg >= RegisterEnum::f0 && reg <= RegisterEnum::f31);
+    };
+    auto is_register_integer = [](RegisterEnum reg) {
+        return (reg >= RegisterEnum::r0 && reg <= RegisterEnum::r31);
+    };
+    auto add_register = [&](const Token& arg, RegisterEnum& reg, size_t idx) -> RegisterEnum {
+        if (!assert_next_token(it, end, TokenKind::Identifier)) return RegisterEnum::r0;
+        auto regit =
+        register_map.find(arg.token(), [](const auto& reg, const StringView name) { return reg.name == name; });
+        if (regit == register_map.end()) {
+            m_tokenizer.print_error("register not found in register map", arg);
+            return RegisterEnum::r0;
+        }
+        const auto& regv = (*regit).val;
+        reg = regv.val;
+        ++it;
+        return regv.val;
+    };
+
+    for (size_t i = 0; i < inst.arg_count; ++i) {
+        const auto& arg = *it;
+        switch (inst.arg_types[i]) {
+        case ArgumentType::Imm:
+            data.args[i].m_type = ArgumentType::Imm;
+            add_immediate(arg, data.args[i].m_imm, i);
+            break;
+        case ArgumentType::Freg: {
+            data.args[i].m_type = ArgumentType::Freg;
+            auto reg = add_register(arg, data.args[i].m_reg, i);
+            if (!is_register_floating_point(reg)) {
+                m_tokenizer.print_error("register is not a floating point register", arg);
+            }
+        } break;
+        case ArgumentType::Reg: {
+            data.args[i].m_type = ArgumentType::Reg;
+            auto reg = add_register(arg, data.args[i].m_reg, i);
+            if (!is_register_integer(reg)) { m_tokenizer.print_error("register is not an integer register", arg); }
+        } break;
+        case ArgumentType::ImmWReg:
+            add_immediate(arg, data.args[i].m_imm_reg.first(), i);
+            if (!assert_next_token(it, end, TokenKind::OpenParens)) return it;
+            add_register(*(++it), data.args[i].m_imm_reg.second(), i);
+            if (!assert_next_token(it, end, TokenKind::CloseParens)) return it;
+            ++it; // skip parens
+            break;
+        }
+        if (i != inst.arg_count - 1) {
+            if (!assert_next_token(it, end, TokenKind::Comma)) return it;
+            ++it; // skip comma
+        }
+    }
+    current_pc += sizeof(uint32_t);
+    m_instructions.append(move(data));
     return it;
 }
 
@@ -188,12 +291,12 @@ ParseResult Parser::parse() {
             case TokenKind::Identifier: {
                 // parse instructions
                 it = parse_instruction(it, end);
-            }
+            } break;
             case TokenKind::Label: {
                 // add label
                 const auto& ident = *it;
                 if (!assert_next_token(++it, end, TokenKind::Colon)) break;
-                m_labels.add(ident.token(), {ident.token(), current_address});
+                m_labels.add(ident.token(), {ident.token(), current_pc});
                 ++it; // skip colon
             } break;
             case TokenKind::Dot: {
@@ -224,8 +327,50 @@ ParseResult Parser::parse() {
             }
         }
     }
-    for (const auto& [name, label] : m_labels) {
-        Printer::print("{}", label);
+    for (auto& insn : m_instructions) {
+        auto& info = *insn.info;
+        for (size_t i = 0; i < info.arg_count; ++i) {
+            auto& arg = insn.args[i];
+            switch (arg.m_type) {
+            case ArgumentType::Imm: {
+                if (arg.m_imm.contains_type<StringView>()) {
+                    const auto& label = arg.m_imm.get<StringView>();
+                    auto label_info = m_labels.find(label);
+                    if (label_info == m_labels.end()) {
+                        Printer::print("label {} not found", label);
+                        has_errored = true;
+                    } else {
+                        const auto& label_addr = (*label_info).value().address;
+                        arg.m_imm = static_cast<int32_t>(label_addr);
+                    }
+                }
+            } break;
+            case ArgumentType::ImmWReg: {
+                if (arg.m_imm_reg.first().contains_type<StringView>()) {
+                    const auto& label = arg.m_imm_reg.first().get<StringView>();
+                    auto label_info = m_labels.find(label);
+                    if (label_info == m_labels.end()) {
+                        Printer::print("label {} not found", label);
+                        has_errored = true;
+                    } else {
+                        const auto& label_addr = (*label_info).value().address;
+                        arg.m_imm_reg.first() = static_cast<int32_t>(label_addr);
+                    }
+                }
+            } break;
+                break;
+            default:
+                break;
+            }
+        }
     }
     return ParseResult::from_ok();
+}
+
+bool Parser::dump_binary_data() const {
+    FILE* fp = fopen(L"ro_data.bin", "wb");
+    if (!fp) { return false; }
+    fwrite(m_ro_data, 1, sizeof(m_ro_data), fp);
+    fclose(fp);
+    return true;
 }

@@ -69,15 +69,17 @@ mfc1 reg,freg
 insn = [x.strip() for x in insns.strip().split("\n")]
 for ins in insn:
     if " " not in ins:
-        print("{},")
+        print("Array<ArgumentType, 3>{},")
     else:
         args = ins.split(" ", 1)[-1].split(",")
-        argstr = "{"
+        argstr = "Array<ArgumentType, 3>{"
         for arg in args:
             if "(" in arg:
                 argstr += "ArgumentType::ImmWReg, "
             elif "imm" in arg:
                 argstr += "ArgumentType::Imm, "
+            elif "freg" in arg:
+                argstr += "ArgumentType::Freg, "
             elif "reg" in arg:
                 argstr += "ArgumentType::Reg, "
         argstr = argstr.strip(", ") + "}"

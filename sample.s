@@ -25,6 +25,7 @@ daddi r16, r0, 10
 l2:
 slt r3, r2, r7
 beqz r3, l3
+l.d f5, doubles(r0)
 l3:
 daddi r10, r10, 1
 daddi r11, r10, -99

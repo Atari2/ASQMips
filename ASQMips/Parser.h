@@ -47,4 +47,5 @@ class Parser {
     ParseResult parse();
     bool dump_binary_data() const;
     const auto& instructions() const { return m_instructions; }
+    void dump_instructions() const;
 };

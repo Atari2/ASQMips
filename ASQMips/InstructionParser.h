@@ -227,14 +227,7 @@ struct InstructionData {
         return *this;
     }
     uint32_t address() const { return pc_address; }
-    uint32_t encode() const {
-        // bits 31-26 opcode
-        // bits 25-21 rs
-        // bits 20-16 rt
-        // bits 15-0 immediate
-        // TODO: implement
-        return 0;
-    }
+    uint32_t encode() const;
 };
 
 template <>

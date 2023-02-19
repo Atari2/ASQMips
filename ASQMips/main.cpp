@@ -1,7 +1,6 @@
 #include "Parser.h"
 #include "Tokenizer.h"
 #include <ArgParser.h>
-#include <cstdio>
 
 using namespace ARLib;
 
@@ -35,9 +34,8 @@ int main(int argc, char** argv) {
         parser.parse();
         if (debug) {
             for (const auto& instruction : parser.instructions()) {
-                // FIXME: replace with my own printf once the fix for the bug in arlib is merged
                 char buf[256]{};
-                int ret = std::snprintf(buf, sizeof(buf), "0x%04X: ", instruction.address());
+                int ret = snprintf(buf, sizeof(buf), "0x%04X: ", instruction.address());
                 buf[ret] = '\0';
                 Printer::print("{}{}", StringView{buf}, instruction);
             }
@@ -45,6 +43,8 @@ int main(int argc, char** argv) {
                 Printer::print("Error dumping binary data because {}", last_error());
                 return 1;
             }
+            parser.dump_instructions();
         }
+        Printer::print("File {} finished assembling successfully", unmatched[0]);
     }
 }

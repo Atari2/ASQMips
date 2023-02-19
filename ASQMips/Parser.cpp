@@ -175,6 +175,12 @@ tit Parser::parse_instruction(tit begin, tit end) {
         ins_name += "."_s + (*it).token().extract_string();
         ++it;
     }
+    if ((*it).kind() == TokenKind::Dot) {
+        ++it;
+        if (!assert_next_token(it, end, TokenKind::Identifier)) return it;
+        ins_name += "."_s + (*it).token().extract_string();
+        ++it;
+    }
     auto instit =
     instruction_map.find(ins_name, [](const auto& inst, const String& name) { return inst.name == name.view(); });
     if (instit == instruction_map.end()) {
@@ -373,4 +379,11 @@ bool Parser::dump_binary_data() const {
     fwrite(m_ro_data, 1, sizeof(m_ro_data), fp);
     fclose(fp);
     return true;
+}
+void Parser::dump_instructions() const {
+    FILE* fp = fopen(L"instructions.cod", "w");
+    for (const auto& insn : m_instructions) {
+        fprintf(fp, "%08x\n", insn.encode());
+    }
+    fclose(fp);
 }

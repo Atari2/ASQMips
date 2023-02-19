@@ -1,3 +1,5 @@
 build
 .cache
 ro_data.bin
+all_instructions.s
+instructions.cod

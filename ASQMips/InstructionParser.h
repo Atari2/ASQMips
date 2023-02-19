@@ -181,73 +181,23 @@ constexpr auto instruction_map = construct_instruction_map();
 
 struct InsnArgument {
     ArgumentType m_type;
-    union {
-        RegisterEnum m_reg;
-        Immediate m_imm;
-        ImmediateWithRegister m_imm_reg;
-    };
-    void _destroy_current() {
-        if (m_type == ArgumentType::Reg || m_type == ArgumentType::Freg) {
-            m_reg.~RegisterEnum();
-        } else if (m_type == ArgumentType::Imm) {
-            m_imm.~Immediate();
-        } else if (m_type == ArgumentType::ImmWReg) {
-            m_imm_reg.~ImmediateWithRegister();
-        }
-    }
+    Variant<RegisterEnum, Immediate, ImmediateWithRegister> m_value;
+
     InsnArgument(ArgumentType type) : m_type{type} {
         if (type == ArgumentType::Reg || m_type == ArgumentType::Freg) {
-            m_reg = RegisterEnum{};
+            m_value = RegisterEnum{};
         } else if (type == ArgumentType::Imm) {
-            m_imm = Immediate{};
+            m_value = Immediate{};
         } else if (type == ArgumentType::ImmWReg) {
-            m_imm_reg = ImmediateWithRegister{};
+            m_value = ImmediateWithRegister{Immediate{}, RegisterEnum{}};
         }
     }
-    InsnArgument(const InsnArgument& other) {
-        m_type = other.m_type;
-        if (m_type == ArgumentType::Reg || m_type == ArgumentType::Freg) {
-            m_reg = other.m_reg;
-        } else if (m_type == ArgumentType::Imm) {
-            m_imm = other.m_imm;
-        } else if (m_type == ArgumentType::ImmWReg) {
-            m_imm_reg = other.m_imm_reg;
-        }
-    }
-    InsnArgument(InsnArgument&& other) : m_type{other.m_type} {
-        if (m_type == ArgumentType::Reg || m_type == ArgumentType::Freg) {
-            m_reg = move(other.m_reg);
-        } else if (m_type == ArgumentType::Imm) {
-            m_imm = move(other.m_imm);
-        } else if (m_type == ArgumentType::ImmWReg) {
-            m_imm_reg = move(other.m_imm_reg);
-        }
-    }
-    InsnArgument& operator=(const InsnArgument& other) {
-        _destroy_current();
-        m_type = other.m_type;
-        if (m_type == ArgumentType::Reg || m_type == ArgumentType::Freg) {
-            m_reg = other.m_reg;
-        } else if (m_type == ArgumentType::Imm) {
-            m_imm = other.m_imm;
-        } else if (m_type == ArgumentType::ImmWReg) {
-            m_imm_reg = other.m_imm_reg;
-        }
-        return *this;
-    }
-    InsnArgument& operator=(InsnArgument&& other) {
-        _destroy_current();
-        m_type = other.m_type;
-        if (m_type == ArgumentType::Reg || m_type == ArgumentType::Freg) {
-            m_reg = move(other.m_reg);
-        } else if (m_type == ArgumentType::Imm) {
-            m_imm = move(other.m_imm);
-        } else if (m_type == ArgumentType::ImmWReg) {
-            m_imm_reg = move(other.m_imm_reg);
-        }
-        return *this;
-    }
-    ~InsnArgument() { _destroy_current(); }
+    auto& m_reg() { return m_value.get<RegisterEnum>(); }
+    auto& m_imm() { return m_value.get<Immediate>(); }
+    auto& m_imm_reg() { return m_value.get<ImmediateWithRegister>(); }
+    const auto& m_reg() const { return m_value.get<RegisterEnum>(); }
+    const auto& m_imm() const { return m_value.get<Immediate>(); }
+    const auto& m_imm_reg() const { return m_value.get<ImmediateWithRegister>(); }
 };
 
 struct InstructionData {
@@ -298,12 +248,12 @@ struct ARLib::PrintInfo<InstructionData> {
             if (i != 0) { str += ", "; }
             const auto& arg = m_data.args[i];
             if (arg.m_type == ArgumentType::Reg || arg.m_type == ArgumentType::Freg) {
-                str += enum_to_str(arg.m_reg);
+                str += enum_to_str(arg.m_reg());
             } else if (arg.m_type == ArgumentType::Imm) {
-                str += PrintInfo<Immediate>(arg.m_imm).repr();
+                str += PrintInfo<Immediate>(arg.m_imm()).repr();
             } else if (arg.m_type == ArgumentType::ImmWReg) {
-                str += enum_to_str(arg.m_imm_reg.second()) + "("_s +
-                       PrintInfo<Immediate>(arg.m_imm_reg.first()).repr() + ")"_s;
+                str += enum_to_str(arg.m_imm_reg().second()) + "("_s +
+                       PrintInfo<Immediate>(arg.m_imm_reg().first()).repr() + ")"_s;
             }
         }
         return str;

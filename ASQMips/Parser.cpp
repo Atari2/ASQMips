@@ -223,24 +223,24 @@ tit Parser::parse_instruction(tit begin, tit end) {
         switch (inst.arg_types[i]) {
         case ArgumentType::Imm:
             data.args[i].m_type = ArgumentType::Imm;
-            add_immediate(arg, data.args[i].m_imm, i);
+            add_immediate(arg, data.args[i].m_imm(), i);
             break;
         case ArgumentType::Freg: {
             data.args[i].m_type = ArgumentType::Freg;
-            auto reg = add_register(arg, data.args[i].m_reg, i);
+            auto reg = add_register(arg, data.args[i].m_reg(), i);
             if (!is_register_floating_point(reg)) {
                 m_tokenizer.print_error("register is not a floating point register", arg);
             }
         } break;
         case ArgumentType::Reg: {
             data.args[i].m_type = ArgumentType::Reg;
-            auto reg = add_register(arg, data.args[i].m_reg, i);
+            auto reg = add_register(arg, data.args[i].m_reg(), i);
             if (!is_register_integer(reg)) { m_tokenizer.print_error("register is not an integer register", arg); }
         } break;
         case ArgumentType::ImmWReg:
-            add_immediate(arg, data.args[i].m_imm_reg.first(), i);
+            add_immediate(arg, data.args[i].m_imm_reg().first(), i);
             if (!assert_next_token(it, end, TokenKind::OpenParens)) return it;
-            add_register(*(++it), data.args[i].m_imm_reg.second(), i);
+            add_register(*(++it), data.args[i].m_imm_reg().second(), i);
             if (!assert_next_token(it, end, TokenKind::CloseParens)) return it;
             ++it; // skip parens
             break;
@@ -333,28 +333,28 @@ ParseResult Parser::parse() {
             auto& arg = insn.args[i];
             switch (arg.m_type) {
             case ArgumentType::Imm: {
-                if (arg.m_imm.contains_type<StringView>()) {
-                    const auto& label = arg.m_imm.get<StringView>();
+                if (arg.m_imm().contains_type<StringView>()) {
+                    const auto& label = arg.m_imm().get<StringView>();
                     auto label_info = m_labels.find(label);
                     if (label_info == m_labels.end()) {
                         Printer::print("label {} not found", label);
                         has_errored = true;
                     } else {
                         const auto& label_addr = (*label_info).value().address;
-                        arg.m_imm = static_cast<int32_t>(label_addr);
+                        arg.m_imm() = static_cast<int32_t>(label_addr);
                     }
                 }
             } break;
             case ArgumentType::ImmWReg: {
-                if (arg.m_imm_reg.first().contains_type<StringView>()) {
-                    const auto& label = arg.m_imm_reg.first().get<StringView>();
+                if (arg.m_imm_reg().first().contains_type<StringView>()) {
+                    const auto& label = arg.m_imm_reg().first().get<StringView>();
                     auto label_info = m_labels.find(label);
                     if (label_info == m_labels.end()) {
                         Printer::print("label {} not found", label);
                         has_errored = true;
                     } else {
                         const auto& label_addr = (*label_info).value().address;
-                        arg.m_imm_reg.first() = static_cast<int32_t>(label_addr);
+                        arg.m_imm_reg().first() = static_cast<int32_t>(label_addr);
                     }
                 }
             } break;

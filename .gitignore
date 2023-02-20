@@ -1,5 +1,10 @@
 build
 .cache
 ro_data.bin
-all_instructions.s
-instructions.cod
+*.s
+*.dat
+*.bin
+*.cod
+!sample.s
+!expected.cod
+!expected.dat

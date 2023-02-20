@@ -1,5 +1,7 @@
 from enum import IntEnum
 import subprocess
+import os
+from contextlib import suppress
 
 insns = """
 lb reg,imm(reg)
@@ -146,7 +148,7 @@ with open("all_instructions.s", "w") as f:
         f.write(str(ins) + "\n")
 
 process = subprocess.run(
-    [".\\build\\ASQMips\\ASQMips.exe", "-d", ".\\all_instructions.s"],
+    [".\\build\\ASQMips\\ASQMips.exe", ".\\all_instructions.s"],
     stdout=subprocess.PIPE,
     stderr=subprocess.PIPE,
 )
@@ -155,7 +157,7 @@ if process.returncode != 0:
     raise ValueError("Failed to assemble")
 
 failed = False
-with open("expected.cod", "r") as f, open("instructions.cod", "r") as g:
+with open("expected.cod", "r") as f, open("all_instructions.cod", "r") as g:
     instructions = [str(ins) for ins in insn]
     og_codes = [int(l, 16) for l in f.readlines()]
     my_codes = [int(l, 16) for l in g.readlines()]
@@ -167,3 +169,31 @@ with open("expected.cod", "r") as f, open("instructions.cod", "r") as g:
             failed = True
 if not failed:
     print("All instructions passed the check!")
+
+process = subprocess.run(
+    [".\\build\\ASQMips\\ASQMips.exe", "--rodata", ".\\sample.s"],
+    stdout=subprocess.PIPE,
+    stderr=subprocess.PIPE,
+)
+
+if process.returncode != 0:
+    raise ValueError("Failed to assemble")
+
+with open("expected.dat", "r") as f, open("sample.dat") as g:
+    og_data = [int(l, 16) for l in f.readlines()]
+    my_data = [int(l, 16) for l in g.readlines()]
+    for og, my in zip(og_data, my_data):
+        if og != my:
+            print(f"Data failed the check, expected {og} but got {my}")
+            failed = True
+if not failed:
+    print("All data passed the check!")
+
+# remove temp files
+with suppress(FileNotFoundError):
+    os.remove("all_instructions.s")
+    os.remove("sample.dat")
+    os.remove("sample.bin")
+    os.remove("sample.cod")
+    os.remove("instructions.cod")
+    os.remove("all_instructions.cod")

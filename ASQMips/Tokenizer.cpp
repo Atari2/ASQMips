@@ -88,7 +88,8 @@ TokenizeResult Tokenizer::tokenize() {
                 if (sep.t == TokenKind::Quote) {
                     ++it;
                     auto next_quote = advance_iterator(it, end, find(it, end, '"'));
-                    auto tok = Token{from_iter(it, next_quote), TokenKind::String, m_source_file.view(), i, it - begin};
+                    auto tok =
+                    Token{from_iter(it, next_quote), TokenKind::String, m_source_file.string().view(), i, it - begin};
                     if (next_quote == end) {
                         print_error("unterminated string"_sv, tok);
                         has_errored = true;
@@ -98,7 +99,8 @@ TokenizeResult Tokenizer::tokenize() {
                 } else if (sep.t == TokenKind::Apostrophe) {
                     ++it;
                     auto next_apost = advance_iterator(it, end, find(it, end, '\''));
-                    auto tok = Token{from_iter(it, next_apost), TokenKind::Char, m_source_file.view(), i, it - begin};
+                    auto tok =
+                    Token{from_iter(it, next_apost), TokenKind::Char, m_source_file.string().view(), i, it - begin};
                     if (next_apost == end || (next_apost - it) != 1) {
                         print_error("unterminated character literal"_sv, tok);
                         has_errored = true;
@@ -106,7 +108,7 @@ TokenizeResult Tokenizer::tokenize() {
                     m_tokens.append(move(tok));
                     it = next_apost;
                 } else {
-                    auto tok = Token{from_iter(it, it + 1), sep.t, m_source_file.view(), i, it - begin};
+                    auto tok = Token{from_iter(it, it + 1), sep.t, m_source_file.string().view(), i, it - begin};
                     if (tok.kind() == TokenKind::Colon) {
                         if (m_tokens.empty()) {
                             print_error("unexpected colon without previous tokens"_sv, tok);
@@ -127,7 +129,7 @@ TokenizeResult Tokenizer::tokenize() {
                 uint8_t dot_n = 0;
                 auto end_of_digit = go_until_valid_number(it, end, dot_n);
                 auto tok = Token{from_iter(it, end_of_digit), dot_n == 0 ? TokenKind::Integer : TokenKind::Real,
-                                 m_source_file.view(), i, it - begin};
+                                 m_source_file.string().view(), i, it - begin};
                 if (*it == '-' && end_of_digit == it + 1) {
                     print_error("lone - found"_sv, tok);
                     has_errored = true;
@@ -146,14 +148,14 @@ TokenizeResult Tokenizer::tokenize() {
                 // check if token is a directive
                 if (auto dir_it = is_directive(word); dir_it != directive_map.end()) {
                     if (m_tokens.last().kind() == TokenKind::Dot) {
-                        m_tokens.emplace(word, TokenKind::Directive, m_source_file.view(), i, it - begin);
+                        m_tokens.emplace(word, TokenKind::Directive, m_source_file.string().view(), i, it - begin);
                     } else {
-                        m_tokens.emplace(word, TokenKind::Identifier, m_source_file.view(), i, it - begin);
+                        m_tokens.emplace(word, TokenKind::Identifier, m_source_file.string().view(), i, it - begin);
                     }
                 } else {
                     bool valid = is_valid_identifier(word);
-                    m_tokens.emplace(word, valid ? TokenKind::Identifier : TokenKind::Invalid, m_source_file.view(), i,
-                                     it - begin);
+                    m_tokens.emplace(word, valid ? TokenKind::Identifier : TokenKind::Invalid,
+                                     m_source_file.string().view(), i, it - begin);
                     const auto& tok = m_tokens.last();
                     if (!valid) {
                         print_error("invalid identifier token", tok);
@@ -170,4 +172,10 @@ TokenizeResult Tokenizer::tokenize() {
 
 void Tokenizer::print_error(const StringView& error, const Token& tok) const {
     Printer::print("error: {} at {} (full line: {})", error, tok, m_lines[tok.line()]);
+}
+
+void Tokenizer::dump_tokens() const {
+    for (const auto& tok : m_tokens) {
+        Printer::print("{}", tok);
+    }
 }

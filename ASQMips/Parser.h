@@ -41,11 +41,13 @@ class Parser {
 
     public:
     Parser(Tokenizer& tokenizer) : m_tokenizer(tokenizer) {
-        memset(m_ro_data, 'x', sizeof(m_ro_data));
-        memset(m_code_data, 'x', sizeof(m_code_data));
+        memset(m_ro_data, 0, sizeof(m_ro_data));
+        memset(m_code_data, 0, sizeof(m_code_data));
     }
     ParseResult parse();
-    bool dump_binary_data() const;
     const auto& instructions() const { return m_instructions; }
+    bool dump_binary_data() const;
     void dump_instructions() const;
+    void dump_labels() const;
+    void encode_instructions() const;
 };

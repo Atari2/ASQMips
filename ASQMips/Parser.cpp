@@ -373,15 +373,48 @@ ParseResult Parser::parse() {
     return ParseResult::from_ok();
 }
 
+#ifdef _MSC_VER
+#define FSCHAR(x) L##x
+#else
+#define FSCHAR(x) x
+#endif
+
+static Path replace_extension(const Path& path, FsStringView ext) {
+    FsString orig = path.extension().string();
+    return path.string().replace(orig.view(), ext);
+}
+
 bool Parser::dump_binary_data() const {
-    FILE* fp = fopen(L"ro_data.bin", "wb");
+    Path ro_data_bin = replace_extension(m_tokenizer.source_file(), FSCHAR(".bin"));
+    Path ro_data_dat = replace_extension(m_tokenizer.source_file(), FSCHAR(".dat"));
+    FILE* fp = fopen(ro_data_bin.string().data(), "wb");
     if (!fp) { return false; }
-    fwrite(m_ro_data, 1, sizeof(m_ro_data), fp);
+    fwrite(m_ro_data, 1, current_address, fp);
+    fclose(fp);
+    fp = fopen(ro_data_dat.string().data(), "w");
+    const uint64_t* data = reinterpret_cast<const uint64_t*>(m_ro_data);
+    for (size_t i = 0; i < current_address / sizeof(uint64_t); ++i) {
+        fprintf(fp, "%016llx\n", data[i]);
+    }
     fclose(fp);
     return true;
 }
 void Parser::dump_instructions() const {
-    FILE* fp = fopen(L"instructions.cod", "w");
+    for (const auto& instruction : instructions()) {
+        char buf[10]{};
+        int ret = snprintf(buf, sizeof(buf), "0x%04X: ", instruction.address());
+        buf[ret] = '\0';
+        Printer::print("{}{}", StringView{buf}, instruction);
+    }
+}
+void Parser::dump_labels() const {
+    for (const auto& [name, value] : m_labels) {
+        Printer::print("{}: {}", name, value);
+    }
+}
+void Parser::encode_instructions() const {
+    Path instruction_file = replace_extension(m_tokenizer.source_file(), FSCHAR(".cod"));
+    FILE* fp = fopen(instruction_file.string().data(), "w");
     for (const auto& insn : m_instructions) {
         fprintf(fp, "%08x\n", insn.encode());
     }

@@ -29,13 +29,13 @@ constexpr Array separators{Sep{':', TokenKind::Colon},       Sep{',', TokenKind:
 class Token {
     StringView m_token;
     TokenKind m_kind;
-    StringView m_source_file;
+    FsStringView m_source_file;
     size_t m_line;
     size_t m_column;
 
     public:
     constexpr Token() noexcept = default;
-    constexpr Token(const StringView& token, TokenKind kind, const StringView& source_file, size_t line,
+    constexpr Token(const StringView& token, TokenKind kind, const FsStringView& source_file, size_t line,
                     size_t column) noexcept :
         m_token(token), m_kind(kind), m_source_file(source_file), m_line(line), m_column(column) {}
     constexpr Token(const Token&) noexcept = default;
@@ -58,7 +58,7 @@ class Token {
     }
     constexpr const StringView& token() const noexcept { return m_token; }
     constexpr TokenKind kind() const noexcept { return m_kind; }
-    constexpr const StringView& source_file() const noexcept { return m_source_file; }
+    constexpr const FsStringView& source_file() const noexcept { return m_source_file; }
     constexpr size_t line() const noexcept { return m_line; }
     constexpr size_t column() const noexcept { return m_column; }
     constexpr void set_as_label() noexcept { m_kind = TokenKind::Label; }
@@ -84,7 +84,7 @@ class Tokenizer {
     Vector<Token> m_tokens{};
     Vector<String> m_lines{};
     File m_file;
-    String m_source_file;
+    Path m_source_file;
     void print_error(const StringView& error, const Token& tok) const;
     friend class Parser;
 
@@ -93,6 +93,8 @@ class Tokenizer {
     DiscardResult<OpenFileError> open();
     TokenizeResult tokenize();
     const Vector<Token>& tokens() const { return m_tokens; }
+    void dump_tokens() const;
+    const auto& source_file() const { return m_source_file; }
 };
 
 template <>

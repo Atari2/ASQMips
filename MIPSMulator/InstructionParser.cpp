@@ -34,7 +34,7 @@ Tuple<int32_t, int32_t, int32_t> extract_fp_regs_from_instruction(uint32_t opcod
 Tuple<int32_t, int32_t, int16_t> extract_i_instruction(uint32_t opcode) {
     int32_t rs = (opcode >> 21) & 0x1F;
     int32_t rt = (opcode >> 16) & 0x1F;
-    int16_t w = opcode & 0xffff;
+    int16_t w = static_cast<int16_t>(opcode & 0xffff);
     return Tuple{rs, rt, w};
 }
 Tuple<int32_t, int32_t, int32_t> extract_r_instruction(uint32_t opcode) {
@@ -55,7 +55,7 @@ Pair<int32_t, int32_t> extract_m_instruction(uint32_t opcode) {
     return Pair{rt, rd};
 }
 int16_t extract_b_instruction(uint32_t opcode) {
-    int16_t w = opcode & 0xffff;
+    int16_t w = static_cast<int16_t>(opcode & 0xffff);
     // w *= 4;
     // w += pc_address + 4;
     return w;

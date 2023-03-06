@@ -25,7 +25,6 @@ struct cxpr::Hasher<RegisterWithName> {
 };
 
 constexpr auto construct_register_map() {
-    size_t sz = 0;
     cxpr::HashTable<RegisterWithName, enum_size<RegisterEnum>()> table{};
     for (auto e : for_each_enum<RegisterEnum>()) {
         const auto view = enum_to_str_view(e);
@@ -166,7 +165,7 @@ struct cxpr::Hasher<InstructionInfo> {
 constexpr auto construct_instruction_map() {
     cxpr::HashTable<InstructionInfo, instruction_names.size()> map{};
     for (auto en : for_each_enum<Instruction>()) {
-        size_t index = ToUnderlying(en);
+        size_t index = static_cast<size_t>(ToUnderlying(en));
         if (en == Instruction::Nop || en == Instruction::Halt) {
             map.insert(InstructionInfo{instruction_names[index], en, 0, instruction_arg_info[index]});
         } else {

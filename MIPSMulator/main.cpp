@@ -3,6 +3,9 @@
 #include <ArgParser.h>
 #include <Printer.h>
 
+#define EXIT_FAILURE 1
+#define EXIT_SUCCESS 0
+
 using namespace ARLib;
 int main(int argc, char** argv) {
     String rodata_file;
@@ -31,10 +34,7 @@ int main(int argc, char** argv) {
     BinaryData rodata{rodata_file};
     InstructionData code{code_file};
     for (auto& instruction : code.instructions) {
-        printf("Instruction: %08x\n", instruction.opcode);
-    }
-    for (auto& data : rodata.data) {
-        printf("Data: %016llx\n", data);
+        instruction.decode();
     }
     return EXIT_SUCCESS;
 }

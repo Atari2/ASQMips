@@ -69,10 +69,10 @@ TokenizeResult Tokenizer::tokenize() {
               .collect<Vector<String>>();
     for (const auto& [i, line] : m_lines.enumerate()) {
         if (line.is_empty()) continue;
-        auto idx = line.index_of(';');
+        auto comment_pos = line.index_of(';');
         StringView real_line{};
-        if (idx != StringView::npos) {
-            real_line = line.substringview(0, idx);
+        if (comment_pos != StringView::npos) {
+            real_line = line.substringview(0, comment_pos);
         } else {
             real_line = line.view();
         }

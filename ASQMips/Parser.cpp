@@ -2,6 +2,7 @@
 #include "DirectiveParser.h"
 #include "InstructionParser.h"
 
+#define CHAR_BIT 8
 using namespace ARLib;
 
 bool Parser::assert_next_token(tit it, tit end, TokenKind kind, bool force_errors) {
@@ -37,7 +38,7 @@ struct BoolSetOnce {
     }
 };
 
-tit Parser::parse_section_change(tit it, tit end, Section& section) {
+tit Parser::parse_section_change(tit it, [[maybe_unused]] tit end, Section& section) {
     // look for .data or .text or .code
     const Token& ident = *it;
     if (ident.token() == "data"_sv) {
@@ -59,7 +60,7 @@ tit Parser::parse_comma_separated_list(tit it, tit end, size_t value_size) {
     while (assert_next_one_of(it, end, {TokenKind::Integer, TokenKind::Real})) {
         const auto& tok = *it;
         if (tok.kind() == TokenKind::Integer) {
-            uint64_t val = StrViewToInt(tok.token()) & ((1ull << (value_size * CHAR_BIT)) - 1);
+            uint64_t val = StrViewToU64(tok.token()) & ((1ull << (value_size * CHAR_BIT)) - 1);
             memcpy(m_ro_data + current_address, &val, value_size);
             current_address += value_size;
         } else {
@@ -102,24 +103,24 @@ tit Parser::parse_directive(tit it, tit end, Section& section) {
     case DirectiveType::org:
         if (!assert_next_token(++it, end, TokenKind::Integer)) return it;
         if (section == Section::Data) {
-            current_address = StrViewToInt((*it).token());
+            current_address = StrViewToU64((*it).token());
         } else {
-            current_pc = StrViewToInt((*it).token());
+            current_pc = StrViewToUInt((*it).token());
         }
         ++it;
         break;
     case DirectiveType::align:
         if (!assert_next_token(++it, end, TokenKind::Integer)) return it;
         if (section == Section::Data) {
-            current_address = align_address(current_address, 0, StrViewToInt((*it).token()));
+            current_address = align_address(current_address, 0, StrViewToU64((*it).token()));
         } else {
-            current_pc = align_address(current_pc, 0, StrViewToInt((*it).token()));
+            current_pc = align_address(current_pc, 0, StrViewToU64((*it).token()));
         }
         ++it;
         break;
     case DirectiveType::space:
         if (!assert_next_token(++it, end, TokenKind::Integer)) return it;
-        current_address = align_address(current_address, StrViewToInt((*it).token()));
+        current_address = align_address(current_address, StrViewToU64((*it).token()));
         ++it;
         break;
     case DirectiveType::ascii:
@@ -190,7 +191,7 @@ tit Parser::parse_instruction(tit begin, tit end) {
     const auto& inst = (*instit).val;
     InstructionData data{inst};
     data.pc_address = current_pc;
-    auto add_immediate = [&](const Token& arg, Immediate& imm, size_t idx) {
+    auto add_immediate = [&](const Token& arg, Immediate& imm) {
         switch (arg.kind()) {
         case TokenKind::Integer:
             imm = StrViewToInt(arg.token());
@@ -201,6 +202,9 @@ tit Parser::parse_instruction(tit begin, tit end) {
         case TokenKind::Identifier:
             imm = arg.token();
             break;
+        default:
+            ASSERT_NOT_REACHED("invalid immediate");
+            break;
         }
         ++it;
     };
@@ -210,7 +214,7 @@ tit Parser::parse_instruction(tit begin, tit end) {
     auto is_register_integer = [](RegisterEnum reg) {
         return (reg >= RegisterEnum::r0 && reg <= RegisterEnum::r31);
     };
-    auto add_register = [&](const Token& arg, RegisterEnum& reg, size_t idx) -> RegisterEnum {
+    auto add_register = [&](const Token& arg, RegisterEnum& reg) -> RegisterEnum {
         if (!assert_next_token(it, end, TokenKind::Identifier)) return RegisterEnum::r0;
         auto regit =
         register_map.find(arg.token(), [](const auto& reg, const StringView name) { return reg.name == name; });
@@ -229,24 +233,24 @@ tit Parser::parse_instruction(tit begin, tit end) {
         switch (inst.arg_types[i]) {
         case ArgumentType::Imm:
             data.args[i].m_type = ArgumentType::Imm;
-            add_immediate(arg, data.args[i].m_imm(), i);
+            add_immediate(arg, data.args[i].m_imm());
             break;
         case ArgumentType::Freg: {
             data.args[i].m_type = ArgumentType::Freg;
-            auto reg = add_register(arg, data.args[i].m_reg(), i);
+            auto reg = add_register(arg, data.args[i].m_reg());
             if (!is_register_floating_point(reg)) {
                 m_tokenizer.print_error("register is not a floating point register", arg);
             }
         } break;
         case ArgumentType::Reg: {
             data.args[i].m_type = ArgumentType::Reg;
-            auto reg = add_register(arg, data.args[i].m_reg(), i);
+            auto reg = add_register(arg, data.args[i].m_reg());
             if (!is_register_integer(reg)) { m_tokenizer.print_error("register is not an integer register", arg); }
         } break;
         case ArgumentType::ImmWReg:
-            add_immediate(arg, data.args[i].m_imm_reg().first(), i);
+            add_immediate(arg, data.args[i].m_imm_reg().first());
             if (!assert_next_token(it, end, TokenKind::OpenParens)) return it;
-            add_register(*(++it), data.args[i].m_imm_reg().second(), i);
+            add_register(*(++it), data.args[i].m_imm_reg().second());
             if (!assert_next_token(it, end, TokenKind::CloseParens)) return it;
             ++it; // skip parens
             break;
@@ -282,12 +286,15 @@ ParseResult Parser::parse() {
             case TokenKind::Dot:
                 it = parse_directive(it, end, section);
                 break;
-            case TokenKind::Label:
+            case TokenKind::Label: {
                 // add label
                 const auto& ident = *it;
                 if (!assert_next_token(++it, end, TokenKind::Colon)) break;
                 m_labels.add(ident.token(), {ident.token(), current_address});
                 ++it; // skip colon
+            } break;
+            default:
+                ASSERT_NOT_REACHED("invalid token in data section");
                 break;
             }
         } break;
@@ -321,8 +328,11 @@ ParseResult Parser::parse() {
                     break;
                 case DirectiveType::org:
                     if (!assert_next_token(++it, end, TokenKind::Integer)) break;
-                    current_address = StrViewToInt((*it).token());
+                    current_address = StrViewToU64((*it).token());
                     ++it;
+                    break;
+                default:
+                    ASSERT_NOT_REACHED("invalid directive in text section");
                     break;
                 }
             } break;

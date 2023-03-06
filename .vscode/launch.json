@@ -7,13 +7,28 @@
         {
             "type": "cppvsdbg",
             "preLaunchTask": "cmake-build",
-            "name": "C++ Launch (Windows)",
+            "name": "C++ Launch Assembler (Windows)",
             "request": "launch",
             "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/build/ASQMips/ASQMips.exe",
             "args": [
                 "-d",
                 "sample.s"
+            ],
+            "console": "integratedTerminal"
+        },
+        {
+            "type": "cppvsdbg",
+            "preLaunchTask": "cmake-build",
+            "name": "C++ Launch Emulator (Windows)",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "program": "${workspaceFolder}/build/MIPSMulator/MIPSMulator.exe",
+            "args": [
+                "--rodata",
+                "expected.dat",
+                "--code",
+                "expected.cod"
             ],
             "console": "integratedTerminal"
         }

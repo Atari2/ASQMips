@@ -1,6 +1,8 @@
 #include "Parser.h"
 #include "Tokenizer.h"
 #include <ArgParser.h>
+#define EXIT_FAILURE 1
+#define EXIT_SUCCESS 0
 
 using namespace ARLib;
 
@@ -13,7 +15,7 @@ int main(int argc, char** argv) {
     ArgParser argparse{argc, argv};
     argparse.add_version(1, 0);
     argparse.allow_unmatched(1);
-    argparse.add_usage_string("./ASQMips.exe [options] <file>.clt");
+    argparse.add_usage_string("./ASQMips.exe [options] <file>.s");
     argparse.add_option("--labels", "Dump labels", dump_labels);
     argparse.add_option("--rodata", "Dump ro-data file", dump_rodata);
     argparse.add_option("--tokens", "Dump tokens", dump_tokens);

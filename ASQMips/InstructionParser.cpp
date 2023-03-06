@@ -209,6 +209,10 @@ constexpr static OpcodeInfo codes[] = {{OpcodeType::I, SubType::LOAD, SI(Opcode:
                                        {OpcodeType::M, SubType::REGID, SMTC1()},
                                        {OpcodeType::M, SubType::REGDI, SMFC1()}};
 
+#ifdef COMPILER_CLANG
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-conversion"
+#endif
 uint32_t InstructionData::encode() const {
     auto op_info = codes[ToUnderlying(info->insn)];
     uint32_t rs = 0;
@@ -393,3 +397,6 @@ uint32_t InstructionData::encode() const {
     }
     return opcode;
 }
+#if COMPILER_CLANG
+#pragma clang diagnostic pop
+#endif

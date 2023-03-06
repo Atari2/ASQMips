@@ -19,7 +19,6 @@ struct cxpr::Hasher<Directive> {
 };
 
 constexpr auto construct_directive_map() {
-    size_t sz = 0;
     cxpr::HashTable<Directive, enum_size<DirectiveType>()> table{};
     for (auto e : for_each_enum<DirectiveType>()) {
         const auto view = enum_to_str_view(e);

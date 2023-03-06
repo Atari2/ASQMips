@@ -54,7 +54,7 @@ Pair<int32_t, int32_t> extract_m_instruction(uint32_t opcode) {
     int32_t rd = (opcode >> 11) & 0x1F;
     return Pair{rt, rd};
 }
-int16_t extract_b_instruction(int16_t opcode) {
+int16_t extract_b_instruction(uint32_t opcode) {
     int16_t w = opcode & 0xffff;
     // w *= 4;
     // w += pc_address + 4;

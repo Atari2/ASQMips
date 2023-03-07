@@ -10,9 +10,14 @@ class CPU {
     Array<uint64_t, 32> m_regs{};
     Array<double, 32> m_freg{};
     bool m_halted = false;
+    uint64_t m_clock_count{0}; // inaccurate for now
+    FILE* m_log_file = nullptr;
 
     public:
-    CPU(const Path& ins_path, const Path& ro_path) : m_ins_data(ins_path), m_ro_data(ro_path) {}
+    CPU(const Path& ins_path, const Path& ro_path) : m_ins_data(ins_path), m_ro_data(ro_path) {
+        FsString p{"dump.txt"};
+        m_log_file = fopen(p.data(), "w");
+    }
     uint64_t reg(Integral auto reg) const { return m_regs[static_cast<uint32_t>(reg)]; }
     void reg(Integral auto reg, Integral auto val) { m_regs[static_cast<uint32_t>(reg)] = static_cast<uint64_t>(val); }
     double freg(Integral auto reg) const { return m_freg[static_cast<uint32_t>(reg)]; }
@@ -65,4 +70,7 @@ class CPU {
     auto memory() const { return m_ro_data.data; }
     void run();
     void dump_state();
+    ~CPU() {
+        if (m_log_file) fclose(m_log_file);
+    }
 };

@@ -8,14 +8,13 @@ void CPU::run() {
         ins.decode(*this);
         dump_state();
         m_pc += sizeof(uint32_t); // 1 instruction is 4 bytes, TODO: consider jumps
+        m_clock_count++;
     }
 }
 void CPU::dump_state() {
-    printf("\tpc = %lld\n", m_pc);
-    for (const auto& [i, reg] : m_regs.enumerate()) {
-        if (reg != 0) printf("\tr%d = %lld\n", i, reg);
-    }
-    for (const auto& [i, freg] : m_freg.enumerate()) {
-        if (freg != 0.0) printf("\tf%d = %Lf\n", i, freg);
+    fprintf(m_log_file, "At clock count = %lld, pc = %lld\n", m_clock_count, m_pc);
+    for (const auto& [i, t] : enumerate(zip(m_regs, m_freg))) {
+        auto [reg, freg] = t;
+        fprintf(m_log_file, "\tr%-2d = %016llX    f%-2d = %7.8Lf\n", i, reg, i, freg);
     }
 }

@@ -181,8 +181,8 @@ constexpr auto instruction_map = construct_instruction_map();
 struct InsnArgument {
     ArgumentType m_type;
     Variant<RegisterEnum, Immediate, ImmediateWithRegister> m_value;
-
-    InsnArgument(ArgumentType type) : m_type{type} {
+    InsnArgument() = default;
+    InsnArgument(ArgumentType type) : m_type{type}, m_value{} {
         if (type == ArgumentType::Reg || m_type == ArgumentType::Freg) {
             m_value = RegisterEnum{};
         } else if (type == ArgumentType::Imm) {
@@ -201,7 +201,7 @@ struct InsnArgument {
 
 struct InstructionData {
     RefBox<const InstructionInfo> info;
-    Array<InsnArgument, 3> args;
+    Array<InsnArgument, 3> args{};
     uint32_t pc_address = 0;
     InstructionData() :
         info{},

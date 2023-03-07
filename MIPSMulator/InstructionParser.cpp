@@ -4,6 +4,8 @@
 #include <File.h>
 #include <Printer.h>
 
+#define TODO_INS(x) ASSERT_NOT_REACHED("TODO INSTRUCTION: " #x "\n")
+
 InstructionData::InstructionData(const Path& p) {
     auto file = File{p};
     file.open(OpenFileMode::Read);
@@ -47,7 +49,6 @@ Tuple<int32_t, int32_t, int32_t> extract_r_instruction(uint32_t opcode) {
 int32_t extract_j_instruction(uint32_t opcode, const CPU& cpu) {
     int32_t w = opcode & 0x3ffffff;
     w *= 4;
-    w += cpu.pc() + 4;
     return w;
 }
 Pair<int32_t, int32_t> extract_m_instruction(uint32_t opcode) {
@@ -58,7 +59,6 @@ Pair<int32_t, int32_t> extract_m_instruction(uint32_t opcode) {
 int16_t extract_b_instruction(uint32_t opcode, const CPU& cpu) {
     int16_t w = static_cast<int16_t>(opcode & 0xffff);
     w *= 4;
-    w += cpu.pc() + 4;
     return w;
 }
 static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
@@ -70,28 +70,34 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     case ImmIns::J: {
         auto w = extract_j_instruction(opcode, cpu);
         Printer::print("j {}", w);
+        TODO_INS(J)
     } break;
     case ImmIns::JAL: {
         auto w = extract_j_instruction(opcode, cpu);
         Printer::print("jal {}", w);
+        TODO_INS(JAL)
     } break;
     case ImmIns::BEQ: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("beq r{}, r{}, {}", rt, rs, w);
+        TODO_INS(BEQ)
     } break;
     case ImmIns::BNE: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("bne r{}, r{}, {}", rt, rs, w);
+        TODO_INS(BNE)
     } break;
     case ImmIns::BEQZ: {
         auto [_, rt, w] = extract_i_instruction(opcode);
+        w *= 4;
+        if (cpu.reg(rt) == 0) cpu.move_pc(w);
         Printer::print("beqz r{}, {}", rt, w);
     } break;
     case ImmIns::BNEZ: {
         auto [_, rt, w] = extract_i_instruction(opcode);
-        Printer::print("bnez r{}, {}", rt, w);
         w *= 4;
         if (cpu.reg(rt) != 0) cpu.move_pc(w);
+        Printer::print("bnez r{}, {}", rt, w);
     } break;
     case ImmIns::DADDI: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
@@ -106,10 +112,12 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     case ImmIns::SLTI: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("slti r{}, r{}, {}", rt, rs, w);
+        TODO_INS(SLTI)
     } break;
     case ImmIns::SLTIU: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("sltiu r{}, r{}, {}", rt, rs, w);
+        TODO_INS(SLTIU)
     } break;
     case ImmIns::ANDI: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
@@ -129,160 +137,198 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     case ImmIns::LUI: {
         auto [_, rt, w] = extract_i_instruction(opcode);
         Printer::print("lui r{}, {}", rt, w);
+        TODO_INS(LUI)
     } break;
     case ImmIns::LB: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.reg(rt, cpu.read<1>(cpu.reg(rs) + static_cast<uint64_t>(w)));
         Printer::print("lb r{}, {}(r{})", rt, w, rs);
     } break;
     case ImmIns::LH: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("lh r{}, {}(r{})", rt, w, rs);
+        TODO_INS(LH)
     } break;
     case ImmIns::LW: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("lw r{}, {}(r{})", rt, w, rs);
+        TODO_INS(LW)
     } break;
     case ImmIns::LBU: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("lbu r{}, {}(r{})", rt, w, rs);
+        TODO_INS(LBU)
     } break;
     case ImmIns::LHU: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("lhu r{}, {}(r{})", rt, w, rs);
+        TODO_INS(LHU)
     } break;
     case ImmIns::LWU: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("lwu r{}, {}(r{})", rt, w, rs);
+        TODO_INS(LWU)
     } break;
     case ImmIns::SB: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("sb r{}, {}(r{})", rt, w, rs);
+        TODO_INS(SB)
     } break;
     case ImmIns::SH: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("sh r{}, {}(r{})", rt, w, rs);
+        TODO_INS(SH)
     } break;
     case ImmIns::SW: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("sw r{}, {}(r{})", rt, w, rs);
+        TODO_INS(SW)
     } break;
     case ImmIns::L_D: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.freg(rt, cpu.readf<8>(cpu.reg(rs) + static_cast<uint64_t>(w)));
         Printer::print("l.d f{}, {}(r{})", rt, w, rs);
     } break;
     case ImmIns::S_D: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("s.d f{}, {}(r{})", rt, w, rs);
+        TODO_INS(S_D)
     } break;
     case ImmIns::LD: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("ld r{}, {}(r{})", rt, w, rs);
+        TODO_INS(LD)
     } break;
     case ImmIns::SD: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
         Printer::print("sd r{}, {}(r{})", rt, w, rs);
+        TODO_INS(SD)
     } break;
     }
 }
-static void decode_register_impl(uint32_t opcode, RegIns ins) {
+static void decode_register_impl(uint32_t opcode, RegIns ins, CPU& cpu) {
     switch (ins) {
     case RegIns::NOP: {
         Printer::print("nop");
+        // DONE
     } break;
     case RegIns::JR: {
         auto [_, rt, __] = extract_r_instruction(opcode);
         Printer::print("jr r{}", rt);
+        TODO_INS(JR)
     } break;
     case RegIns::JALR: {
         auto [_, rt, __] = extract_r_instruction(opcode);
         Printer::print("jalr r{}", rt);
+        TODO_INS(JALR)
     } break;
     case RegIns::MOVZ: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("movz r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(MOVZ)
     } break;
     case RegIns::MOVN: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("movn r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(MOVN)
     } break;
     case RegIns::DSLLV: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("dsllv r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DSLLV)
     } break;
     case RegIns::DSRLV: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("dsrlv r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DSRLV)
     } break;
     case RegIns::DSRAV: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("dsrav r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DSRAV)
     } break;
     case RegIns::DMUL: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("dmul r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DMUL)
     } break;
     case RegIns::DMULU: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("dmulu r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DMULU)
     } break;
     case RegIns::DDIV: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("ddiv r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DDIV)
     } break;
     case RegIns::DDIVU: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("ddivu r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DDIVU)
     } break;
     case RegIns::AND: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("and r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(AND)
     } break;
     case RegIns::OR: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("or r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(OR)
     } break;
     case RegIns::XOR: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("xor r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(XOR)
     } break;
     case RegIns::SLT: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
+        cpu.reg(rd, cpu.reg(rs) < cpu.reg(rt));
         Printer::print("slt r{}, r{}, r{}", rd, rs, rt);
     } break;
     case RegIns::SLTU: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("sltu r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(SLTU)
     } break;
     case RegIns::DADD: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("dadd r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DADD)
     } break;
     case RegIns::DADDU: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("daddu r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DADDU)
     } break;
     case RegIns::DSUB: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("dsub r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DSUB)
     } break;
     case RegIns::DSUBU: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
         Printer::print("subu r{}, r{}, r{}", rd, rs, rt);
+        TODO_INS(DSUBU)
     } break;
     case RegIns::DSLL: {
         auto [rs, _, rd] = extract_r_instruction(opcode);
         auto flags = (opcode >> 6) & 0b11111;
         Printer::print("dsll r{}, r{}, {}", rd, rs, flags);
+        TODO_INS(DSLL)
     } break;
     case RegIns::DSRL: {
         auto [rs, _, rd] = extract_r_instruction(opcode);
         auto flags = (opcode >> 6) & 0b11111;
         Printer::print("dsrl r{}, r{}, {}", rd, rs, flags);
+        TODO_INS(DSRL)
     } break;
     case RegIns::DSRA: {
         auto [rs, _, rd] = extract_r_instruction(opcode);
         auto flags = (opcode >> 6) & 0b11111;
         Printer::print("dsra r{}, r{}, {}", rd, rs, flags);
+        TODO_INS(DSRA)
     } break;
     }
 }
@@ -291,33 +337,43 @@ static void decode_fp_impl(uint32_t opcode, FPIns ins) {
     switch (ins) {
     case FPIns::ADD_D: {
         Printer::print("add.d f{}, f{}, f{}", rs, rt, rd);
+        TODO_INS(ADD_D)
     } break;
     case FPIns::SUB_D: {
         Printer::print("sub.d f{}, f{}, f{}", rs, rt, rd);
+        TODO_INS(SUB_D)
     } break;
     case FPIns::MUL_D: {
         Printer::print("mul.d f{}, f{}, f{}", rs, rt, rd);
+        TODO_INS(MUL_D)
     } break;
     case FPIns::DIV_D: {
         Printer::print("div.d f{}, f{}, f{}", rs, rt, rd);
+        TODO_INS(DIV_D)
     } break;
     case FPIns::MOV_D: {
         Printer::print("mov.d f{}, f{}", rd, rs);
+        TODO_INS(MOV_D)
     } break;
     case FPIns::CVT_D_L: {
         Printer::print("cvt.d.l f{}, f{}", rd, rs);
+        TODO_INS(CVT_D_L)
     } break;
     case FPIns::CVT_L_D: {
         Printer::print("cvt.l.d f{}, f{}", rd, rs);
+        TODO_INS(CVT_L_D)
     } break;
     case FPIns::C_LT_D: {
         Printer::print("c.lt.d f{}, f{}", rs, rt);
+        TODO_INS(C_LT_D)
     } break;
     case FPIns::C_LE_D: {
         Printer::print("c.le.d f{}, f{}", rs, rt);
+        TODO_INS(C_LE_D)
     } break;
     case FPIns::C_EQ_D: {
         Printer::print("c.eq.d f{}, f{}", rs, rt);
+        TODO_INS(C_EQ_D)
     } break;
     }
 }
@@ -330,7 +386,7 @@ static void decode_impl(uint32_t opcode, InsType type, uint32_t num, CPU& cpu) {
     } break;
     case InsType::Reg: {
         RegIns ins = static_cast<RegIns>(num);
-        decode_register_impl(opcode, ins);
+        decode_register_impl(opcode, ins, cpu);
     } break;
     case InsType::Fp: {
         FPIns ins = static_cast<FPIns>(num);
@@ -340,19 +396,23 @@ static void decode_impl(uint32_t opcode, InsType type, uint32_t num, CPU& cpu) {
         // move data from integer register to FP register
         auto [rt, rd] = extract_m_instruction(opcode);
         Printer::print("mtc1 r{}, f{}", rt, rd);
+        TODO_INS(SMTC1)
     } break;
     case InsType::SMFC1: {
         // move data from FP register to integer register
         auto [rt, rd] = extract_m_instruction(opcode);
         Printer::print("mfc1 r{}, f{}", rt, rd);
+        TODO_INS(SMFC1)
     } break;
     case InsType::SBC1T: {
         int16_t w = extract_b_instruction(opcode, cpu);
         Printer::print("bc1t {}", w);
+        TODO_INS(SBC1T)
     } break;
     case InsType::SBC1F: {
         int16_t w = extract_b_instruction(opcode, cpu);
         Printer::print("bc1t {}", w);
+        TODO_INS(SBC1F)
     } break;
     }
 }

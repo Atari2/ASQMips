@@ -16,6 +16,6 @@ void CPU::dump_state() {
         if (reg != 0) printf("\tr%d = %lld\n", i, reg);
     }
     for (const auto& [i, freg] : m_freg.enumerate()) {
-        if (freg != 0.0) printf("\tf%d = %f\n", i, freg);
+        if (freg != 0.0) printf("\tf%d = %Lf\n", i, freg);
     }
 }

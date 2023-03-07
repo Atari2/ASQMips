@@ -8,9 +8,11 @@
 
 using namespace ARLib;
 
+class CPU;
+
 struct Instruction {
     uint32_t opcode;
-    void decode();
+    void decode(CPU& cpu);
 };
 
 template <>

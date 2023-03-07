@@ -1,3 +1,4 @@
+#include "CPU.h"
 #include "DataParser.h"
 #include "InstructionParser.h"
 #include <ArgParser.h>
@@ -31,10 +32,7 @@ int main(int argc, char** argv) {
         Printer::print("No code file specified");
         return EXIT_FAILURE;
     }
-    BinaryData rodata{rodata_file};
-    InstructionData code{code_file};
-    for (auto& instruction : code.instructions) {
-        instruction.decode();
-    }
+    CPU cpu{code_file, rodata_file};
+    cpu.run();
     return EXIT_SUCCESS;
 }

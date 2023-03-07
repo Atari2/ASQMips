@@ -14,6 +14,8 @@ add_executable(MIPSMulator
     InstructionParser.cpp
     DataParser.h
     DataParser.cpp
+    CPU.h
+    CPU.cpp
 )
 target_include_directories(MIPSMulator SYSTEM PUBLIC ${ARLib_SOURCE_DIR})
 target_link_libraries(MIPSMulator PUBLIC ARLib)

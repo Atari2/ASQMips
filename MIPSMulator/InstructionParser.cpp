@@ -1,4 +1,5 @@
 #include "InstructionParser.h"
+#include "CPU.h"
 
 #include <File.h>
 #include <Printer.h>
@@ -43,10 +44,10 @@ Tuple<int32_t, int32_t, int32_t> extract_r_instruction(uint32_t opcode) {
     int32_t rd = (opcode >> 11) & 0x1F;
     return Tuple{rs, rt, rd};
 }
-int32_t extract_j_instruction(uint32_t opcode) {
+int32_t extract_j_instruction(uint32_t opcode, const CPU& cpu) {
     int32_t w = opcode & 0x3ffffff;
-    // w *= 4;
-    // w += pc_address + 4;
+    w *= 4;
+    w += cpu.pc() + 4;
     return w;
 }
 Pair<int32_t, int32_t> extract_m_instruction(uint32_t opcode) {
@@ -54,23 +55,24 @@ Pair<int32_t, int32_t> extract_m_instruction(uint32_t opcode) {
     int32_t rd = (opcode >> 11) & 0x1F;
     return Pair{rt, rd};
 }
-int16_t extract_b_instruction(uint32_t opcode) {
+int16_t extract_b_instruction(uint32_t opcode, const CPU& cpu) {
     int16_t w = static_cast<int16_t>(opcode & 0xffff);
-    // w *= 4;
-    // w += pc_address + 4;
+    w *= 4;
+    w += cpu.pc() + 4;
     return w;
 }
-static void decode_immediate_impl(uint32_t opcode, ImmIns ins) {
+static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     switch (ins) {
     case ImmIns::HALT: {
+        cpu.halt();
         Printer::print("halt");
     } break;
     case ImmIns::J: {
-        auto w = extract_j_instruction(opcode);
+        auto w = extract_j_instruction(opcode, cpu);
         Printer::print("j {}", w);
     } break;
     case ImmIns::JAL: {
-        auto w = extract_j_instruction(opcode);
+        auto w = extract_j_instruction(opcode, cpu);
         Printer::print("jal {}", w);
     } break;
     case ImmIns::BEQ: {
@@ -88,13 +90,17 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins) {
     case ImmIns::BNEZ: {
         auto [_, rt, w] = extract_i_instruction(opcode);
         Printer::print("bnez r{}, {}", rt, w);
+        w *= 4;
+        if (cpu.reg(rt) != 0) cpu.move_pc(w);
     } break;
     case ImmIns::DADDI: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.reg(rt, cpu.reg(rs) + static_cast<uint64_t>(w));
         Printer::print("daddi r{}, r{}, {}", rt, rs, w);
     } break;
     case ImmIns::DADDIU: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.reg(rt, cpu.reg(rs) + static_cast<uint64_t>(w));
         Printer::print("daddiu r{}, r{}, {}", rt, rs, w);
     } break;
     case ImmIns::SLTI: {
@@ -107,14 +113,17 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins) {
     } break;
     case ImmIns::ANDI: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.reg(rt, cpu.reg(rs) & static_cast<uint64_t>(w));
         Printer::print("andi r{}, r{}, {}", rt, rs, w);
     } break;
     case ImmIns::ORI: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.reg(rt, cpu.reg(rs) | static_cast<uint64_t>(w));
         Printer::print("ori r{}, r{}, {}", rt, rs, w);
     } break;
     case ImmIns::XORI: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.reg(rt, cpu.reg(rs) ^ static_cast<uint64_t>(w));
         Printer::print("xori r{}, r{}, {}", rt, rs, w);
     } break;
     case ImmIns::LUI: {
@@ -313,11 +322,11 @@ static void decode_fp_impl(uint32_t opcode, FPIns ins) {
     }
 }
 
-static void decode_impl(uint32_t opcode, InsType type, uint32_t num) {
+static void decode_impl(uint32_t opcode, InsType type, uint32_t num, CPU& cpu) {
     switch (type) {
     case InsType::Imm: {
         ImmIns ins = static_cast<ImmIns>(num);
-        decode_immediate_impl(opcode, ins);
+        decode_immediate_impl(opcode, ins, cpu);
     } break;
     case InsType::Reg: {
         RegIns ins = static_cast<RegIns>(num);
@@ -338,44 +347,44 @@ static void decode_impl(uint32_t opcode, InsType type, uint32_t num) {
         Printer::print("mfc1 r{}, f{}", rt, rd);
     } break;
     case InsType::SBC1T: {
-        int16_t w = extract_b_instruction(opcode);
+        int16_t w = extract_b_instruction(opcode, cpu);
         Printer::print("bc1t {}", w);
     } break;
     case InsType::SBC1F: {
-        int16_t w = extract_b_instruction(opcode);
+        int16_t w = extract_b_instruction(opcode, cpu);
         Printer::print("bc1t {}", w);
     } break;
     }
 }
-void Instruction::decode() {
+void Instruction::decode(CPU& cpu) {
     uint32_t instruction_id = (opcode >> 26) & 0b111111;
     uint32_t bits_check = (opcode >> 21) & 0b11111;
     if (instruction_id == 0) {
         // I_SPECIAL (SR)
         instruction_id = opcode & 0b111111;
-        decode_impl(opcode, InsType::Reg, instruction_id);
+        decode_impl(opcode, InsType::Reg, instruction_id, cpu);
     } else if (instruction_id == 0x11 && bits_check == 0x11) {
         // I_COP1 + I_DOUBLE (SF)
         instruction_id = opcode & 0b111111;
         // floating point instructions
-        decode_impl(opcode, InsType::Fp, instruction_id);
+        decode_impl(opcode, InsType::Fp, instruction_id, cpu);
     } else if (instruction_id == 0x11) {
         // special cases
         if (bits_check == 0x04) {
             // SMTC1
-            decode_impl(opcode, InsType::SMTC1, instruction_id);
+            decode_impl(opcode, InsType::SMTC1, instruction_id, cpu);
         } else if (bits_check == 0x08 && (opcode & (1 << 16))) {
             // SBC1T
-            decode_impl(opcode, InsType::SBC1T, instruction_id);
+            decode_impl(opcode, InsType::SBC1T, instruction_id, cpu);
         } else if (bits_check == 0x08) {
             // SBC1F
-            decode_impl(opcode, InsType::SBC1F, instruction_id);
+            decode_impl(opcode, InsType::SBC1F, instruction_id, cpu);
         } else {
             // SMFC1
-            decode_impl(opcode, InsType::SMFC1, instruction_id);
+            decode_impl(opcode, InsType::SMFC1, instruction_id, cpu);
         }
     } else {
         // SI instructions
-        decode_impl(opcode, InsType::Imm, instruction_id);
+        decode_impl(opcode, InsType::Imm, instruction_id, cpu);
     }
 }

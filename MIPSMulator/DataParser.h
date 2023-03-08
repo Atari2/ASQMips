@@ -7,7 +7,7 @@
 using namespace ARLib;
 
 struct BinaryData {
-    Vector<uint64_t> data;
+    Vector<uint8_t> data;
     BinaryData(const Path& p);
-    const uint8_t* data_raw() { return reinterpret_cast<const uint8_t*>(data.data()); }
+    const uint8_t* data_raw() { return data.data(); }
 };

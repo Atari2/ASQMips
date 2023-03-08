@@ -174,18 +174,18 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     } break;
     case ImmIns::SB: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.write<1>(cpu.reg(rs) + static_cast<uint64_t>(w), cpu.reg(rt));
         Printer::print("sb r{}, {}(r{})", rt, w, rs);
-        TODO_INS(SB)
     } break;
     case ImmIns::SH: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.write<2>(cpu.reg(rs) + static_cast<uint64_t>(w), cpu.reg(rt));
         Printer::print("sh r{}, {}(r{})", rt, w, rs);
-        TODO_INS(SH)
     } break;
     case ImmIns::SW: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.write<4>(cpu.reg(rs) + static_cast<uint64_t>(w), cpu.reg(rt));
         Printer::print("sw r{}, {}(r{})", rt, w, rs);
-        TODO_INS(SW)
     } break;
     case ImmIns::L_D: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
@@ -205,8 +205,8 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     } break;
     case ImmIns::SD: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.write<8>(cpu.reg(rs) + static_cast<uint64_t>(w), cpu.reg(rt));
         Printer::print("sd r{}, {}(r{})", rt, w, rs);
-        TODO_INS(SD)
     } break;
     }
 }

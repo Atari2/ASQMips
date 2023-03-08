@@ -66,10 +66,48 @@ class CPU {
             COMPTIME_ASSERT("Invalid size");
         }
     }
+    template <size_t S>
+    void write(uint64_t addr, Integral auto val) {
+        if constexpr (S == 1) {
+            m_ro_data.data[addr] = static_cast<uint8_t>(val);
+        } else if constexpr (S == 2) {
+            m_ro_data.data[addr] = static_cast<uint8_t>(val & 0xFF);
+            m_ro_data.data[addr + 1] = static_cast<uint8_t>((val >> 8) & 0xFF);
+        } else if constexpr (S == 4) {
+            m_ro_data.data[addr] = static_cast<uint8_t>(val & 0xFF);
+            m_ro_data.data[addr + 1] = static_cast<uint8_t>((val >> 8) & 0xFF);
+            m_ro_data.data[addr + 2] = static_cast<uint8_t>((val >> 16) & 0xFF);
+            m_ro_data.data[addr + 3] = static_cast<uint8_t>((val >> 24) & 0xFF);
+        } else if constexpr (S == 8) {
+            m_ro_data.data[addr] = static_cast<uint8_t>(val & 0xFF);
+            m_ro_data.data[addr + 1] = static_cast<uint8_t>((val >> 8) & 0xFF);
+            m_ro_data.data[addr + 2] = static_cast<uint8_t>((val >> 16) & 0xFF);
+            m_ro_data.data[addr + 3] = static_cast<uint8_t>((val >> 24) & 0xFF);
+            m_ro_data.data[addr + 4] = static_cast<uint8_t>((val >> 32) & 0xFF);
+            m_ro_data.data[addr + 5] = static_cast<uint8_t>((val >> 40) & 0xFF);
+            m_ro_data.data[addr + 6] = static_cast<uint8_t>((val >> 48) & 0xFF);
+            m_ro_data.data[addr + 7] = static_cast<uint8_t>((val >> 56) & 0xFF);
+        } else {
+            COMPTIME_ASSERT("Invalid size");
+        }
+    }
+    template <size_t S>
+    void writef(uint64_t addr, FloatingPoint auto val) {
+        if constexpr (S == 4) {
+            uint32_t v = BitCast(val);
+            write<4>(addr, v);
+        } else if constexpr (S == 8) {
+            uint64_t v = BitCast(val);
+            write<8>(addr, v);
+        } else {
+            COMPTIME_ASSERT("Invalid size");
+        }
+    }
     void halt() { m_halted = true; }
     auto memory() const { return m_ro_data.data; }
     void run();
     void dump_state();
+    void dump_memory();
     ~CPU() {
         if (m_log_file) fclose(m_log_file);
     }

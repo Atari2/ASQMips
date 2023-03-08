@@ -9,3 +9,4 @@ ro_data.bin
 !tests/*.s
 !expected.cod
 !expected.dat
+dump.txt

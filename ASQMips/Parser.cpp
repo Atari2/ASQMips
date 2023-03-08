@@ -60,7 +60,22 @@ tit Parser::parse_comma_separated_list(tit it, tit end, size_t value_size) {
     while (assert_next_one_of(it, end, {TokenKind::Integer, TokenKind::Real})) {
         const auto& tok = *it;
         if (tok.kind() == TokenKind::Integer) {
-            uint64_t val = StrViewToU64(tok.token()) & ((1ull << (value_size * CHAR_BIT)) - 1);
+            auto get_max_val_for_size = [](size_t vsize) -> size_t {
+                switch (vsize) {
+                case 1:
+                    return NumberTraits<uint8_t>::max;
+                case 2:
+                    return NumberTraits<uint16_t>::max;
+                case 4:
+                    return NumberTraits<uint32_t>::max;
+                case 8:
+                    return NumberTraits<uint64_t>::max;
+                default:
+                    HARD_ASSERT(false, "invalid size");
+                    return 0;
+                }
+            };
+            uint64_t val = StrViewToI64(tok.token()) & get_max_val_for_size(value_size);
             memcpy(m_ro_data + current_address, &val, value_size);
             current_address += value_size;
         } else {

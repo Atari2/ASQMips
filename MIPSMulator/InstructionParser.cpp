@@ -141,33 +141,36 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     } break;
     case ImmIns::LB: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
-        cpu.reg(rt, cpu.read<1>(cpu.reg(rs) + static_cast<uint64_t>(w)));
+        ARLib::int8_t val = cpu.read<1>(cpu.reg(rs) + static_cast<uint64_t>(w));
+        cpu.reg(rt, static_cast<uint64_t>(val));
         Printer::print("lb r{}, {}(r{})", rt, w, rs);
     } break;
     case ImmIns::LH: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        ARLib::int16_t val = cpu.read<2>(cpu.reg(rs) + static_cast<uint64_t>(w));
+        cpu.reg(rt, static_cast<uint64_t>(val));
         Printer::print("lh r{}, {}(r{})", rt, w, rs);
-        TODO_INS(LH)
     } break;
     case ImmIns::LW: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        ARLib::int32_t val = cpu.read<4>(cpu.reg(rs) + static_cast<uint64_t>(w));
+        cpu.reg(rt, static_cast<uint64_t>(val));
         Printer::print("lw r{}, {}(r{})", rt, w, rs);
-        TODO_INS(LW)
     } break;
     case ImmIns::LBU: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.reg(rt, cpu.read<1>(cpu.reg(rs) + static_cast<uint64_t>(w)));
         Printer::print("lbu r{}, {}(r{})", rt, w, rs);
-        TODO_INS(LBU)
     } break;
     case ImmIns::LHU: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.reg(rt, cpu.read<2>(cpu.reg(rs) + static_cast<uint64_t>(w)));
         Printer::print("lhu r{}, {}(r{})", rt, w, rs);
-        TODO_INS(LHU)
     } break;
     case ImmIns::LWU: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.reg(rt, cpu.read<4>(cpu.reg(rs) + static_cast<uint64_t>(w)));
         Printer::print("lwu r{}, {}(r{})", rt, w, rs);
-        TODO_INS(LWU)
     } break;
     case ImmIns::SB: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
@@ -196,8 +199,9 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     } break;
     case ImmIns::LD: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        ARLib::int64_t val = cpu.read<8>(cpu.reg(rs) + static_cast<uint64_t>(w));
+        cpu.reg(rt, static_cast<uint64_t>(val));
         Printer::print("ld r{}, {}(r{})", rt, w, rs);
-        TODO_INS(LD)
     } break;
     case ImmIns::SD: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
@@ -279,8 +283,8 @@ static void decode_register_impl(uint32_t opcode, RegIns ins, CPU& cpu) {
     } break;
     case RegIns::XOR: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);
+        cpu.reg(rd, cpu.reg(rs) ^ cpu.reg(rt));
         Printer::print("xor r{}, r{}, r{}", rd, rs, rt);
-        TODO_INS(XOR)
     } break;
     case RegIns::SLT: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);

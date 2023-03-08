@@ -6,5 +6,6 @@ ro_data.bin
 *.bin
 *.cod
 !sample.s
+!tests/*.s
 !expected.cod
 !expected.dat

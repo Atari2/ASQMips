@@ -1,4 +1,5 @@
 #include "Parser.h"
+#include "BigInt.h"
 #include "DirectiveParser.h"
 #include "InstructionParser.h"
 
@@ -60,7 +61,7 @@ tit Parser::parse_comma_separated_list(tit it, tit end, size_t value_size) {
     while (assert_next_one_of(it, end, {TokenKind::Integer, TokenKind::Real})) {
         const auto& tok = *it;
         if (tok.kind() == TokenKind::Integer) {
-            auto get_max_val_for_size = [](size_t vsize) -> size_t {
+            auto get_max_val_for_size = [](size_t vsize) -> uint64_t {
                 switch (vsize) {
                 case 1:
                     return NumberTraits<uint8_t>::max;
@@ -75,7 +76,9 @@ tit Parser::parse_comma_separated_list(tit it, tit end, size_t value_size) {
                     return 0;
                 }
             };
-            uint64_t val = StrViewToI64(tok.token()) & get_max_val_for_size(value_size);
+            BigInt bval{tok.token()};
+            uint64_t max_val = get_max_val_for_size(value_size);
+            uint64_t val = bval.to_absolute_value() & max_val;
             memcpy(m_ro_data + current_address, &val, value_size);
             current_address += value_size;
         } else {

@@ -9,11 +9,10 @@ BinaryData::BinaryData(const Path& p) {
     if (lines_or_error.is_error()) { return; }
     auto lines = lines_or_error.to_ok();
     data.resize(lines.size() * wordline_sz);
-    auto split = lines.split_view("\n");
-    for (const auto& [idx, line] : split.enumerate()) {
-        auto val = StrViewToU64Hexadecimal(line);
+    for (const auto& [idx, val] :
+         lines.split_view("\n").iter().filter(&StringView::size).map(StrViewToU64Hexadecimal).enumerate()) {
         for (size_t i = 0; i < wordline_sz; i++) {
-            data[(idx * wordline_sz) + i] = ((val >> (i * 8)) & 0xFF);
+            data[(idx * wordline_sz) + i] = ((val >> (i * wordline_sz)) & 0xFF);
         }
     }
     data.resize(0x400);

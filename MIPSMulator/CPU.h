@@ -30,6 +30,7 @@ class CPU {
         pc += offset;
         m_pc = static_cast<uint64_t>(pc);
     }
+    void set_pc(uint64_t new_pc) { m_pc = new_pc; }
     template <size_t S>
     auto read(uint64_t addr) {
         if constexpr (S == 1) {
@@ -97,7 +98,7 @@ class CPU {
             uint32_t v = BitCast(val);
             write<4>(addr, v);
         } else if constexpr (S == 8) {
-            uint64_t v = BitCast(val);
+            uint64_t v = BitCast<uint64_t>(val);
             write<8>(addr, v);
         } else {
             COMPTIME_ASSERT("Invalid size");

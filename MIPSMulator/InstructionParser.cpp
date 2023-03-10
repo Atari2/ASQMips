@@ -12,7 +12,7 @@ InstructionData::InstructionData(const Path& p) {
     auto lines_or_error = file.read_all();
     if (lines_or_error.is_error()) { return; }
     auto lines = lines_or_error.to_ok();
-    for (const auto& line : lines.split("\n").view().filter([](String& line) {
+    for (const auto& line : lines.split("\n").iter().filter([](String& line) {
              line.itrim();
              return !line.is_empty();
          })) {
@@ -69,13 +69,15 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     } break;
     case ImmIns::J: {
         auto w = extract_j_instruction(opcode, cpu);
+        cpu.set_pc(w);
         Printer::print("j {}", w);
-        TODO_INS(J)
     } break;
     case ImmIns::JAL: {
+        constexpr auto ra_reg = 31;
         auto w = extract_j_instruction(opcode, cpu);
+        cpu.reg(ra_reg, cpu.pc() + 4);
+        cpu.move_pc(w);
         Printer::print("jal {}", w);
-        TODO_INS(JAL)
     } break;
     case ImmIns::BEQ: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
@@ -194,8 +196,8 @@ static void decode_immediate_impl(uint32_t opcode, ImmIns ins, CPU& cpu) {
     } break;
     case ImmIns::S_D: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
+        cpu.writef<8>(cpu.reg(rs) + static_cast<uint64_t>(w), cpu.freg(rt));
         Printer::print("s.d f{}, {}(r{})", rt, w, rs);
-        TODO_INS(S_D)
     } break;
     case ImmIns::LD: {
         auto [rs, rt, w] = extract_i_instruction(opcode);
@@ -218,13 +220,15 @@ static void decode_register_impl(uint32_t opcode, RegIns ins, CPU& cpu) {
     } break;
     case RegIns::JR: {
         auto [_, rt, __] = extract_r_instruction(opcode);
+        cpu.set_pc(cpu.reg(rt));
         Printer::print("jr r{}", rt);
-        TODO_INS(JR)
     } break;
     case RegIns::JALR: {
+        constexpr auto ra_reg = 31;
         auto [_, rt, __] = extract_r_instruction(opcode);
+        cpu.reg(ra_reg, cpu.pc() + 4);
+        cpu.set_pc(cpu.reg(rt));
         Printer::print("jalr r{}", rt);
-        TODO_INS(JALR)
     } break;
     case RegIns::MOVZ: {
         auto [rs, rt, rd] = extract_r_instruction(opcode);

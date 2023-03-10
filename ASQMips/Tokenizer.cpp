@@ -64,9 +64,9 @@ TokenizeResult Tokenizer::tokenize() {
     if (lines_or_err.is_error()) { return TokenizeResult::from_error(lines_or_err.to_error()); }
     m_lines = lines_or_err.to_ok()
               .split("\n")
-              .view()
+              .iter()
               .inplace_transform([](String& line) { return line.trim(); })
-              .collect<Vector<String>>();
+              .collect<Vector>();
     for (const auto& [i, line] : m_lines.enumerate()) {
         if (line.is_empty()) continue;
         auto comment_pos = line.index_of(';');

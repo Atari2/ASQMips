@@ -12,7 +12,6 @@ ld r1, 1(r1)
 sd r1, 1(r1)
 l.d f1, 1(r1)
 s.d f1, 1(r1)
-halt
 daddi r1, r1, 1
 daddui r1, r1, 1
 andi r1, r1, 1
@@ -21,14 +20,20 @@ xori r1, r1, 1
 lui r1, 1
 slti r1, r1, 1
 sltiu r1, r1, 1
-beq r1, r1, 1
-bne r1, r1, 1
-beqz r1, 1
-bnez r1, 1
-j 1
-jr r1
-jal 1
+beq r1, r1, l1
+l1:
+bne r1, r1, l2
+l2:
+beqz r1, l3
+l3:
+bnez r1, l4
+l4:
+j l5
+l5:
+jal fake_sub
+daddui r1, r0, 268 
 jalr r1
+xor r1, r1, r1
 dsll r1, r1, 1
 dsrl r1, r1, 1
 dsra r1, r1, 1
@@ -61,7 +66,14 @@ cvt.l.d f1, f1
 c.lt.d f1, f1
 c.le.d f1, f1
 c.eq.d f1, f1
-bc1f 1
-bc1t 1
+bc1f l6
+l6:
+bc1t l7
+l7:
 mtc1 r1, f1
 mfc1 r1, f1
+halt
+
+
+fake_sub:
+jr r31

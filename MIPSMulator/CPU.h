@@ -9,6 +9,7 @@ class CPU {
     uint64_t m_pc{0};
     Array<uint64_t, 32> m_regs{};
     Array<double, 32> m_freg{};
+    bool m_fp_flag = false;
     bool m_halted = false;
     uint64_t m_clock_count{0}; // inaccurate for now
     FILE* m_log_file = nullptr;
@@ -92,6 +93,8 @@ class CPU {
             COMPTIME_ASSERT("Invalid size");
         }
     }
+    bool fpflag() const { return m_fp_flag; }
+    void fpflag(bool val) { m_fp_flag = val; }
     template <size_t S>
     void writef(uint64_t addr, FloatingPoint auto val) {
         if constexpr (S == 4) {

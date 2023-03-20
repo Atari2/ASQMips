@@ -2,10 +2,10 @@
 #include "cstdio_compat.h"
 #include <Console.h>
 
-void CPU::run() {
+void CPU::run(bool print_instructions) {
     while (!m_halted) {
         auto& ins = m_ins_data.instructions[m_pc / sizeof(uint32_t)];
-        ins.decode(*this);
+        ins.decode(*this, print_instructions);
         dump_state();
         m_pc += sizeof(uint32_t);
         m_clock_count++;

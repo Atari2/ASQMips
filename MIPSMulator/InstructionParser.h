@@ -1,10 +1,12 @@
 #pragma once
 
 #include <CharConv.h>
+#include <File.h>
 #include <Path.h>
 #include <PrintInfo.h>
 #include <Types.h>
 #include <Vector.h>
+
 
 using namespace ARLib;
 
@@ -12,7 +14,7 @@ class CPU;
 
 struct Instruction {
     uint32_t opcode;
-    void decode(CPU& cpu);
+    void decode(CPU& cpu, bool print_instructions);
 };
 
 template <>
@@ -23,6 +25,8 @@ struct ARLib::PrintInfo<Instruction> {
 };
 
 struct InstructionData {
+    using MixResult = Result<String, Variant<OpenFileError, ReadFileError>>;
     Vector<Instruction> instructions;
-    InstructionData(const Path& p);
+    InstructionData() = default;
+    MixResult load(const Path& p);
 };

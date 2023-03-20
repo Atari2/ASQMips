@@ -15,9 +15,15 @@ class CPU {
     FILE* m_log_file = nullptr;
 
     public:
-    CPU(const Path& ins_path, const Path& ro_path) : m_ins_data(ins_path), m_ro_data(ro_path) {
+    CPU() {
         FsString p{"dump.txt"};
         m_log_file = fopen(p.data(), "w");
+    }
+    using MR = BinaryData::MixResult;
+    MR initialize(const Path& ins_data, const Path& ro_data) {
+        if (auto m_err = m_ins_data.load(ins_data); m_err.is_error()) { return MR::from_error(m_err.to_error()); };
+        if (auto m_err = m_ro_data.load(ro_data); m_err.is_error()) { return MR::from_error(m_err.to_error()); };
+        return MR::from_ok();
     }
     uint64_t reg(Integral auto reg) const { return m_regs[static_cast<uint32_t>(reg)]; }
     void reg(Integral auto reg, Integral auto val) { m_regs[static_cast<uint32_t>(reg)] = static_cast<uint64_t>(val); }
@@ -109,7 +115,7 @@ class CPU {
     }
     void halt() { m_halted = true; }
     auto memory() const { return m_ro_data.data; }
-    void run();
+    void run(bool print_instructions);
     void dump_state();
     void dump_memory();
     ~CPU() {

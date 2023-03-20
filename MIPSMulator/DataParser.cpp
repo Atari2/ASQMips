@@ -1,15 +1,9 @@
 #include "DataParser.h"
-#include <File.h>
 
-BinaryData::BinaryData(const Path& p) {
+BinaryData::MixResult BinaryData::load(const Path& p) {
     constexpr size_t wordline_sz = sizeof(uint64_t);
-    File file{p};
-    file.open(OpenFileMode::Read);
-    auto lines_or_error = file.read_all();
-    if (lines_or_error.is_error()) {
-        // TODO: deal with error
-        return;
-    }
+    auto lines_or_error = File::read_all(p);
+    if (lines_or_error.is_error()) { return MixResult::from_error(lines_or_error.to_error()); }
     auto filedata = lines_or_error.to_ok();
     data.reserve(filedata.size() * wordline_sz);
     for (const auto& [idx, val] :
@@ -19,4 +13,5 @@ BinaryData::BinaryData(const Path& p) {
         }
     }
     data.resize(0x400);
+    return MixResult::from_ok();
 }

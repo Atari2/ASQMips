@@ -9,12 +9,14 @@
 
 using namespace ARLib;
 int main(int argc, char** argv) {
+    bool print_instructions = false;
     String rodata_file;
     String code_file;
     ArgParser parser{argc, argv};
     parser.add_version(1, 0);
     parser.add_option("--rodata", "filename", "ROData file to read", rodata_file);
     parser.add_option("--code", "filename", "Code file to read", code_file);
+    parser.add_option("--insn", "Print the instructions as they're being executed", print_instructions);
     auto ec = parser.parse();
     if (ec.is_error()) {
         Printer::print("Error parsing arguments: {}", ec.to_error().error);
@@ -32,7 +34,11 @@ int main(int argc, char** argv) {
         Printer::print("No code file specified");
         return EXIT_FAILURE;
     }
-    CPU cpu{code_file, rodata_file};
-    cpu.run();
+    CPU cpu{};
+    if (auto m_err = cpu.initialize(rodata_file, code_file); m_err.is_error()) {
+        Printer::print("Error initializing CPU: {}", m_err.to_error());
+        return EXIT_FAILURE;
+    };
+    cpu.run(print_instructions);
     return EXIT_SUCCESS;
 }

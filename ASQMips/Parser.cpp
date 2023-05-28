@@ -1,7 +1,7 @@
 #include "Parser.h"
-#include "BigInt.h"
 #include "DirectiveParser.h"
 #include "InstructionParser.h"
+#include <BigInt.hpp>
 
 #define CHAR_BIT 8
 using namespace ARLib;
@@ -82,7 +82,7 @@ tit Parser::parse_comma_separated_list(tit it, tit end, size_t value_size) {
             memcpy(m_ro_data + current_address, &val, value_size);
             current_address += value_size;
         } else {
-            double val = StrViewToDouble(tok.token());
+            double val = MUST(StrViewToDouble(tok.token()));
             memcpy(m_ro_data + current_address, &val, value_size);
             current_address += value_size;
         }
@@ -121,24 +121,24 @@ tit Parser::parse_directive(tit it, tit end, Section& section) {
     case DirectiveType::org:
         if (!assert_next_token(++it, end, TokenKind::Integer)) return it;
         if (section == Section::Data) {
-            current_address = StrViewToU64((*it).token());
+            current_address = MUST(StrViewToU64((*it).token()));
         } else {
-            current_pc = StrViewToUInt((*it).token());
+            current_pc = MUST(StrViewToUInt((*it).token()));
         }
         ++it;
         break;
     case DirectiveType::align:
         if (!assert_next_token(++it, end, TokenKind::Integer)) return it;
         if (section == Section::Data) {
-            current_address = align_address(current_address, 0, StrViewToU64((*it).token()));
+            current_address = align_address(current_address, 0, MUST(StrViewToU64((*it).token())));
         } else {
-            current_pc = align_address(current_pc, 0, StrViewToU64((*it).token()));
+            current_pc = align_address(current_pc, 0, MUST(StrViewToU64((*it).token())));
         }
         ++it;
         break;
     case DirectiveType::space:
         if (!assert_next_token(++it, end, TokenKind::Integer)) return it;
-        current_address = align_address(current_address, StrViewToU64((*it).token()));
+        current_address = align_address(current_address, MUST(StrViewToU64((*it).token())));
         ++it;
         break;
     case DirectiveType::ascii:
@@ -212,10 +212,10 @@ tit Parser::parse_instruction(tit begin, tit end) {
     auto add_immediate = [&](const Token& arg, Immediate& imm) {
         switch (arg.kind()) {
         case TokenKind::Integer:
-            imm = StrViewToInt(arg.token());
+            imm = MUST(StrViewToInt(arg.token()));
             break;
         case TokenKind::Real:
-            imm = StrViewToDouble(arg.token());
+            imm = MUST(StrViewToDouble(arg.token()));
             break;
         case TokenKind::Identifier:
             imm = arg.token();
@@ -283,7 +283,7 @@ tit Parser::parse_instruction(tit begin, tit end) {
     return it;
 }
 
-ParseResult Parser::parse() {
+DiscardResult<> Parser::parse() {
     BoolSetOnce has_errored{};
     Section section = Section::None;
     const auto& tokens = m_tokenizer.tokens();
@@ -308,7 +308,7 @@ ParseResult Parser::parse() {
                 // add label
                 const auto& ident = *it;
                 if (!assert_next_token(++it, end, TokenKind::Colon)) break;
-                m_labels.add(ident.token(), {ident.token(), current_address});
+                m_labels.insert(ident.token(), Label{ident.token(), current_address});
                 ++it; // skip colon
             } break;
             default:
@@ -327,7 +327,7 @@ ParseResult Parser::parse() {
                 // add label
                 const auto& ident = *it;
                 if (!assert_next_token(++it, end, TokenKind::Colon)) break;
-                m_labels.add(ident.token(), {ident.token(), current_pc});
+                m_labels.insert(ident.token(), Label{ident.token(), current_pc});
                 ++it; // skip colon
             } break;
             case TokenKind::Dot: {
@@ -344,11 +344,13 @@ ParseResult Parser::parse() {
                 case DirectiveType::code:
                     it = parse_section_change(it, end, section);
                     break;
-                case DirectiveType::org:
+                case DirectiveType::org: {
                     if (!assert_next_token(++it, end, TokenKind::Integer)) break;
-                    current_address = StrViewToU64((*it).token());
+                    auto res = StrViewToU64((*it).token());
+                    if (res.is_error()) return Error{res.to_error()};
+                    current_address = res.to_ok();
                     ++it;
-                    break;
+                } break;
                 default:
                     ASSERT_NOT_REACHED("invalid directive in text section");
                     break;
@@ -374,7 +376,7 @@ ParseResult Parser::parse() {
                         Printer::print("label {} not found", label);
                         has_errored = true;
                     } else {
-                        const auto& label_addr = (*label_info).value().address;
+                        const auto& label_addr = (*label_info).val().address;
                         arg.m_imm() = static_cast<int32_t>(label_addr);
                     }
                 }
@@ -387,7 +389,7 @@ ParseResult Parser::parse() {
                         Printer::print("label {} not found", label);
                         has_errored = true;
                     } else {
-                        const auto& label_addr = (*label_info).value().address;
+                        const auto& label_addr = (*label_info).val().address;
                         arg.m_imm_reg().first() = static_cast<int32_t>(label_addr);
                     }
                 }
@@ -398,7 +400,7 @@ ParseResult Parser::parse() {
             }
         }
     }
-    return ParseResult::from_ok();
+    return DiscardResult<>{};
 }
 
 #ifdef _MSC_VER

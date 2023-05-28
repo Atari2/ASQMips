@@ -1,7 +1,7 @@
 #pragma once
 #include "DataParser.h"
 #include "InstructionParser.h"
-#include <Array.h>
+#include <Array.hpp>
 
 class CPU {
     InstructionData m_ins_data;
@@ -19,11 +19,10 @@ class CPU {
         FsString p{"dump.txt"};
         m_log_file = fopen(p.data(), "w");
     }
-    using MR = BinaryData::MixResult;
-    MR initialize(const Path& ins_data, const Path& ro_data) {
-        if (auto m_err = m_ins_data.load(ins_data); m_err.is_error()) { return MR::from_error(m_err.to_error()); };
-        if (auto m_err = m_ro_data.load(ro_data); m_err.is_error()) { return MR::from_error(m_err.to_error()); };
-        return MR::from_ok();
+    DiscardResult<FileError> initialize(const Path& ins_data, const Path& ro_data) {
+        TRY(m_ins_data.load(ins_data));
+        TRY(m_ro_data.load(ro_data));
+        return {};
     }
     uint64_t reg(Integral auto reg) const { return m_regs[static_cast<uint32_t>(reg)]; }
     void reg(Integral auto reg, Integral auto val) { m_regs[static_cast<uint32_t>(reg)] = static_cast<uint64_t>(val); }

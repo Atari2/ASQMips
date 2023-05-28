@@ -1,28 +1,29 @@
 #include "InstructionParser.h"
 #include "CPU.h"
-#include <Printer.h>
+#include <Printer.hpp>
 
-InstructionData::MixResult InstructionData::load(const Path& p) {
+DiscardResult<FileError> InstructionData::load(const Path& p) {
     auto lines_or_error = File::read_all(p);
-    if (lines_or_error.is_error()) { return MixResult::from_error(lines_or_error.to_error()); }
+    if (lines_or_error.is_error()) { return FileError{lines_or_error.to_error()}; }
     auto lines = lines_or_error.to_ok();
     for (const auto& line :
          lines.split("\n").iter().inplace_transform([](String& line) { return line.trim(); }).filter([](String& line) {
              return !line.is_empty();
          })) {
-        instructions.append(Instruction{StrViewToUInt(line.view(), 16)});
+        TRY_SET(val, StrViewToUInt(line.view(), 16));
+        instructions.append(Instruction{val});
     }
-    return MixResult::from_ok();
+    return FileError{};
 }
-MAKE_FANCY_ENUM(InsType, Reg, Imm, Fp, SMTC1, SMFC1, SBC1T, SBC1F);
-MAKE_FANCY_ENUM(FPIns, ADD_D = 0, SUB_D = 1, MUL_D = 2, DIV_D = 3, MOV_D = 6, CVT_D_L = 33, CVT_L_D = 37, C_LT_D = 60,
-                C_LE_D = 62, C_EQ_D = 50);
-MAKE_FANCY_ENUM(RegIns, NOP = 0, JR = 8, JALR = 9, MOVZ = 10, MOVN = 11, DSLLV = 20, DSRLV = 22, DSRAV = 23, DMUL = 28,
-                DMULU = 29, DDIV = 30, DDIVU = 31, AND = 36, OR = 37, XOR = 38, SLT = 42, SLTU = 43, DADD = 44,
-                DADDU = 45, DSUB = 46, DSUBU = 47, DSLL = 56, DSRL = 58, DSRA = 59);
-MAKE_FANCY_ENUM(ImmIns, HALT = 1, J = 2, JAL = 3, BEQ = 4, BNE = 5, BEQZ = 6, BNEZ = 7, DADDI = 24, DADDIU = 25,
-                SLTI = 10, SLTIU = 11, ANDI = 12, ORI = 13, XORI = 14, LUI = 15, LB = 32, LH = 33, LW = 35, LBU = 36,
-                LHU = 37, LWU = 39, SB = 40, SH = 41, SW = 43, L_D = 53, S_D = 61, LD = 55, SD = 63);
+MAKE_FANCY_ENUM(InsType, uint8_t, Reg, Imm, Fp, SMTC1, SMFC1, SBC1T, SBC1F);
+MAKE_FANCY_ENUM(FPIns, uint8_t, ADD_D = 0, SUB_D = 1, MUL_D = 2, DIV_D = 3, MOV_D = 6, CVT_D_L = 33, CVT_L_D = 37,
+                C_LT_D = 60, C_LE_D = 62, C_EQ_D = 50);
+MAKE_FANCY_ENUM(RegIns, uint8_t, NOP = 0, JR = 8, JALR = 9, MOVZ = 10, MOVN = 11, DSLLV = 20, DSRLV = 22, DSRAV = 23,
+                DMUL = 28, DMULU = 29, DDIV = 30, DDIVU = 31, AND = 36, OR = 37, XOR = 38, SLT = 42, SLTU = 43,
+                DADD = 44, DADDU = 45, DSUB = 46, DSUBU = 47, DSLL = 56, DSRL = 58, DSRA = 59);
+MAKE_FANCY_ENUM(ImmIns, uint8_t, HALT = 1, J = 2, JAL = 3, BEQ = 4, BNE = 5, BEQZ = 6, BNEZ = 7, DADDI = 24,
+                DADDIU = 25, SLTI = 10, SLTIU = 11, ANDI = 12, ORI = 13, XORI = 14, LUI = 15, LB = 32, LH = 33, LW = 35,
+                LBU = 36, LHU = 37, LWU = 39, SB = 40, SH = 41, SW = 43, L_D = 53, S_D = 61, LD = 55, SD = 63);
 Tuple<int32_t, int32_t, int32_t> extract_fp_regs_from_instruction(uint32_t opcode) {
     int32_t rs = (opcode >> 11) & 0x1F;
     int32_t rt = (opcode >> 16) & 0x1F;

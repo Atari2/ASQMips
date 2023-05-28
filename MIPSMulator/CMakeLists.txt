@@ -5,7 +5,7 @@ include(FetchContent)
 FetchContent_Declare(
 	ARLib
 	GIT_REPOSITORY "https://github.com/Atari2/ARLib"
-	GIT_TAG master
+	GIT_TAG separate-include-source-dir
 )
 FetchContent_MakeAvailable(ARLib)
 add_executable(MIPSMulator 

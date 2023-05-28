@@ -1,6 +1,6 @@
 #include "CPU.h"
-#include "cstdio_compat.h"
-#include <Console.h>
+#include <Console.hpp>
+#include <cstdio_compat.hpp>
 
 void CPU::run(bool print_instructions) {
     while (!m_halted) {
@@ -21,11 +21,15 @@ void CPU::dump_state() {
 }
 
 void CPU::dump_memory() {
-    FILE* fp = fopen(L"memdump.dat", "w");
+    File f{Path{"memdump.dat"}};
+    f.open(OpenFileMode::Write);
     size_t words = m_ro_data.data.size() / sizeof(uint64_t);
+    static char buf[1024];
     for (size_t i = 0; i < words; i++) {
+        buf[0] = '\0';
         uint64_t val = 0;
         memcpy(&val, m_ro_data.data_raw() + (i * sizeof(uint64_t)), sizeof(uint64_t));
-        fprintf(fp, "%04X %016llx\n", i * sizeof(uint64_t), val);
+        size_t sz = static_cast<size_t>(snprintf(buf, sizeof(buf), "%04X %016llX\n", i * sizeof(uint64_t), val));
+        f.write(String{buf, sz});
     }
 }

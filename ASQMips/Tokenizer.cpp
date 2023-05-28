@@ -1,10 +1,10 @@
 #include "Tokenizer.h"
 #include "DirectiveParser.h"
-#include <CxprHashMap.h>
+#include <CxprHashMap.hpp>
 
-DiscardResult<OpenFileError> Tokenizer::open() {
+DiscardResult<FileError> Tokenizer::open() {
     TRY(m_file.open(OpenFileMode::Read));
-    return DiscardResult<OpenFileError>::from_ok();
+    return {};
 }
 
 static StringView from_iter(ConstIterator<char> it, ConstIterator<char> end) {
@@ -61,12 +61,12 @@ static auto go_until_valid_number(itt it, itt end, uint8_t& dot_n) {
 TokenizeResult Tokenizer::tokenize() {
     bool has_errored = false;
     auto lines_or_err = m_file.read_all();
-    if (lines_or_err.is_error()) { return TokenizeResult::from_error(lines_or_err.to_error()); }
+    if (lines_or_err.is_error()) { return TokenizeError{lines_or_err.to_error()}; }
     m_lines = lines_or_err.to_ok()
               .split("\n")
               .iter()
               .inplace_transform([](String& line) { return line.trim(); })
-              .collect<Vector>();
+              .collect<Vector<String>>();
     for (const auto& [i, line] : m_lines.enumerate()) {
         if (line.is_empty()) continue;
         auto comment_pos = line.index_of(';');
@@ -166,8 +166,8 @@ TokenizeResult Tokenizer::tokenize() {
             }
         }
     }
-    if (has_errored) { return TokenizeResult::from_error(TokenizeError{}); }
-    return TokenizeResult::from_ok();
+    if (has_errored) { return TokenizeError{"Error during tokenization"_s}; }
+    return {};
 }
 
 void Tokenizer::print_error(const StringView& error, const Token& tok) const {

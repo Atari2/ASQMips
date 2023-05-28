@@ -1,8 +1,8 @@
 #include "CPU.h"
 #include "DataParser.h"
 #include "InstructionParser.h"
-#include <ArgParser.h>
-#include <Printer.h>
+#include <ArgParser.hpp>
+#include <Printer.hpp>
 
 #define EXIT_FAILURE 1
 #define EXIT_SUCCESS 0
@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
     parser.add_option("--insn", "Print the instructions as they're being executed", print_instructions);
     auto ec = parser.parse();
     if (ec.is_error()) {
-        Printer::print("Error parsing arguments: {}", ec.to_error().error);
+        Printer::print("Error parsing arguments: {}", ec.to_error().error_string());
         return EXIT_FAILURE;
     }
     if (parser.help_requested()) {

@@ -1,17 +1,18 @@
 #pragma once
 #include "Tokenizer.h"
-#include <Array.h>
-#include <CxprHashMap.h>
-#include <EnumHelpers.h>
-#include <StringView.h>
-#include <Tuple.h>
-#include <Variant.h>
+#include <Array.hpp>
+#include <CxprHashMap.hpp>
+#include <EnumHelpers.hpp>
+#include <StringView.hpp>
+#include <Tuple.hpp>
+#include <Variant.hpp>
 
 using namespace ARLib;
 
-MAKE_FANCY_ENUM(RegisterEnum, r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17, r18, r19,
-                r20, r21, r22, r23, r24, r25, r26, r27, r28, r29, r30, r31, f0, f1, f2, f3, f4, f5, f6, f7, f8, f9, f10,
-                f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23, f24, f25, f26, f27, f28, f29, f30, f31)
+MAKE_FANCY_ENUM(RegisterEnum, uint8_t, r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17,
+                r18, r19, r20, r21, r22, r23, r24, r25, r26, r27, r28, r29, r30, r31, f0, f1, f2, f3, f4, f5, f6, f7,
+                f8, f9, f10, f11, f12, f13, f14, f15, f16, f17, f18, f19, f20, f21, f22, f23, f24, f25, f26, f27, f28,
+                f29, f30, f31)
 
 struct RegisterWithName {
     StringView name;
@@ -53,19 +54,20 @@ struct ARLib::PrintInfo<Label> {
 using Immediate = Variant<int32_t, double, StringView>;
 using ImmediateWithRegister = Pair<Immediate, RegisterEnum>;
 
-MAKE_FANCY_ENUM(Instruction, LoadByte, LoadByteUnsigned, StoreByte, LoadHalfWord, LoadHalfWordUnsigned, StoreHalfWord,
-                LoadWord, LoadWordUnsigned, StoreWord, LoadDoubleWord, StoreDoubleWord, LoadReal, StoreReal, Halt,
-                AddImmediate, AddImmediateUnsigned, LogicalAndImmediate, LogicalOrImmediate, LogicalXorImmediate,
-                LoadUpperImmediate, SetLessThanImmediate, SetLessThanImmediateUnsigned, BranchIfEqual, BranchIfNotEqual,
-                BranchIfZero, BranchIfNotZero, Jump, JumpToReg, JumpAndLink, JumpAndLinkToReg, ShiftLefLogical,
-                ShiftRightLogical, ShiftRightArithmetic, ShiftLeftByVar, ShiftRightByVar, ShiftRightArithByVar,
-                MoveIfZero, MoveIfNotZero, Nop, LogicalAnd, LogicalOr, LogicalXor, SetLessThan, SetLessThanUnsigned,
-                Add, AddUnsigned, Subtract, SubtractUnsigned, Multiply, MultiplyUnsigned, Divide, DivideUnsigned,
-                AddReal, SubtractReal, MultiplyReal, DivideReal, MoveReal, ConvertIntegerToReal, ConvertRealToInteger,
-                SetFpFlagIfLessThan, SetFpFlagIfLessThanOrEqual, SetFpFlagIfEqual, BranchIfFpFlagNotSet,
-                BranchIfFpFlagSet, MoveDataFromIntegerToFp, MoveDataFromFpToInteger)
+MAKE_FANCY_ENUM(Instruction, uint8_t, LoadByte, LoadByteUnsigned, StoreByte, LoadHalfWord, LoadHalfWordUnsigned,
+                StoreHalfWord, LoadWord, LoadWordUnsigned, StoreWord, LoadDoubleWord, StoreDoubleWord, LoadReal,
+                StoreReal, Halt, AddImmediate, AddImmediateUnsigned, LogicalAndImmediate, LogicalOrImmediate,
+                LogicalXorImmediate, LoadUpperImmediate, SetLessThanImmediate, SetLessThanImmediateUnsigned,
+                BranchIfEqual, BranchIfNotEqual, BranchIfZero, BranchIfNotZero, Jump, JumpToReg, JumpAndLink,
+                JumpAndLinkToReg, ShiftLefLogical, ShiftRightLogical, ShiftRightArithmetic, ShiftLeftByVar,
+                ShiftRightByVar, ShiftRightArithByVar, MoveIfZero, MoveIfNotZero, Nop, LogicalAnd, LogicalOr,
+                LogicalXor, SetLessThan, SetLessThanUnsigned, Add, AddUnsigned, Subtract, SubtractUnsigned, Multiply,
+                MultiplyUnsigned, Divide, DivideUnsigned, AddReal, SubtractReal, MultiplyReal, DivideReal, MoveReal,
+                ConvertIntegerToReal, ConvertRealToInteger, SetFpFlagIfLessThan, SetFpFlagIfLessThanOrEqual,
+                SetFpFlagIfEqual, BranchIfFpFlagNotSet, BranchIfFpFlagSet, MoveDataFromIntegerToFp,
+                MoveDataFromFpToInteger)
 
-MAKE_FANCY_ENUM(ArgumentType, Reg, Freg, Imm, ImmWReg);
+MAKE_FANCY_ENUM(ArgumentType, uint8_t, Reg, Freg, Imm, ImmWReg);
 
 constexpr Array instruction_names{
 "lb"_sv,    "lbu"_sv,   "sb"_sv,    "lh"_sv,      "lhu"_sv,     "sh"_sv,     "lw"_sv,     "lwu"_sv,    "sw"_sv,

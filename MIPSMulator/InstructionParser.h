@@ -1,12 +1,11 @@
 #pragma once
 
-#include <CharConv.h>
-#include <File.h>
-#include <Path.h>
-#include <PrintInfo.h>
-#include <Types.h>
-#include <Vector.h>
-
+#include <CharConv.hpp>
+#include <File.hpp>
+#include <Path.hpp>
+#include <PrintInfo.hpp>
+#include <Types.hpp>
+#include <Vector.hpp>
 
 using namespace ARLib;
 
@@ -25,8 +24,7 @@ struct ARLib::PrintInfo<Instruction> {
 };
 
 struct InstructionData {
-    using MixResult = Result<String, Variant<OpenFileError, ReadFileError>>;
     Vector<Instruction> instructions;
     InstructionData() = default;
-    MixResult load(const Path& p);
+    DiscardResult<FileError> load(const Path& p);
 };

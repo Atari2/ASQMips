@@ -1,6 +1,6 @@
 #include "Parser.h"
 #include "Tokenizer.h"
-#include <ArgParser.h>
+#include <ArgParser.hpp>
 #define EXIT_FAILURE 1
 #define EXIT_SUCCESS 0
 

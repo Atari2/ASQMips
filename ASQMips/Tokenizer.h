@@ -1,18 +1,18 @@
 #pragma once
 
-#include <Array.h>
-#include <CharConv.h>
-#include <EnumHelpers.h>
-#include <File.h>
-#include <Path.h>
-#include <Printer.h>
-#include <StringView.h>
-#include <Vector.h>
+#include <Array.hpp>
+#include <CharConv.hpp>
+#include <EnumHelpers.hpp>
+#include <File.hpp>
+#include <Path.hpp>
+#include <Printer.hpp>
+#include <StringView.hpp>
+#include <Vector.hpp>
 
 using namespace ARLib;
 
-MAKE_FANCY_ENUM(TokenKind, Invalid, Identifier, Label, Directive, Integer, Real, String, Char, Colon, Comma, Dot,
-                OpenParens, CloseParens, Quote, Apostrophe);
+MAKE_FANCY_ENUM(TokenKind, uint8_t, Invalid, Identifier, Label, Directive, Integer, Real, String, Char, Colon, Comma,
+                Dot, OpenParens, CloseParens, Quote, Apostrophe);
 
 struct Sep {
     const char c;
@@ -66,19 +66,15 @@ class Token {
 
 using tit = ConstIterator<Token>;
 
-struct TokenizeError {
-    TokenizeError() = default;
-    constexpr static inline StringView error = "error during tokenization"_sv;
+class TokenizeError : public Error {
+    public:
+    TokenizeError(ConvertibleTo<String> auto val) : Error{move(val)} {}
+    template <typename OtherError>
+        requires DerivedFrom<OtherError, ErrorBase>
+    TokenizeError(OtherError&& other) : Error{move(other.error_string())} {}
 };
 
-template <>
-struct ARLib::PrintInfo<TokenizeError> {
-    const TokenizeError& m_error;
-    constexpr PrintInfo(const TokenizeError& error) noexcept : m_error(error) {}
-    String repr() const { return "TokenizerError { "_s + m_error.error.extract_string() + " }"_s; }
-};
-
-using TokenizeResult = DiscardResult<Variant<ReadFileError, TokenizeError>>;
+using TokenizeResult = DiscardResult<TokenizeError>;
 
 class Tokenizer {
     Vector<Token> m_tokens{};
@@ -90,7 +86,7 @@ class Tokenizer {
 
     public:
     Tokenizer(const Path& filename) : m_file(filename), m_source_file(m_file.name().narrow()) {}
-    DiscardResult<OpenFileError> open();
+    DiscardResult<FileError> open();
     TokenizeResult tokenize();
     const Vector<Token>& tokens() const { return m_tokens; }
     void dump_tokens() const;

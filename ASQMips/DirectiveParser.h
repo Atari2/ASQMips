@@ -1,11 +1,12 @@
 #pragma once
 #include "Tokenizer.h"
-#include <CxprHashMap.h>
-#include <EnumHelpers.h>
+#include <CxprHashMap.hpp>
+#include <EnumHelpers.hpp>
 
 using namespace ARLib;
 
-MAKE_FANCY_ENUM(DirectiveType, data, text, code, org, space, asciiz, ascii, align, word, byte, word32, word16, double_)
+MAKE_FANCY_ENUM(DirectiveType, uint8_t, data, text, code, org, space, asciiz, ascii, align, word, byte, word32, word16,
+                double_)
 
 struct Directive {
     StringView name;

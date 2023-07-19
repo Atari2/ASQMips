@@ -72,6 +72,8 @@
         "xloctime": "cpp",
         "xmemory": "cpp",
         "xstddef": "cpp",
-        "xtr1common": "cpp"
+        "xtr1common": "cpp",
+        "xtree": "cpp"
     },
+    "cmake.configureOnOpen": true,
 }

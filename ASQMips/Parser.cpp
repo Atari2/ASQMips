@@ -79,11 +79,11 @@ tit Parser::parse_comma_separated_list(tit it, tit end, size_t value_size) {
             BigInt bval{tok.token()};
             uint64_t max_val = get_max_val_for_size(value_size);
             uint64_t val = bval.to_absolute_value() & max_val;
-            memcpy(m_ro_data + current_address, &val, value_size);
+            ARLib::memcpy(m_ro_data + current_address, &val, value_size);
             current_address += value_size;
         } else {
             double val = MUST(StrViewToDouble(tok.token()));
-            memcpy(m_ro_data + current_address, &val, value_size);
+            ARLib::memcpy(m_ro_data + current_address, &val, value_size);
             current_address += value_size;
         }
         ++it;
@@ -143,13 +143,13 @@ tit Parser::parse_directive(tit it, tit end, Section& section) {
         break;
     case DirectiveType::ascii:
         if (!assert_next_token(++it, end, TokenKind::String)) return it;
-        memcpy(m_ro_data + current_address, (*it).token().data(), (*it).token().length());
+        ARLib::memcpy(m_ro_data + current_address, (*it).token().data(), (*it).token().length());
         current_address = align_address(current_address, (*it).token().length());
         ++it;
         break;
     case DirectiveType::asciiz:
         if (!assert_next_token(++it, end, TokenKind::String)) return it;
-        memcpy(m_ro_data + current_address, (*it).token().data(), (*it).token().length());
+        ARLib::memcpy(m_ro_data + current_address, (*it).token().data(), (*it).token().length());
         m_ro_data[current_address + (*it).token().length()] = '\0';
         current_address = align_address(current_address, (*it).token().length() + 1);
         ++it;
@@ -419,20 +419,20 @@ bool Parser::dump_binary_data() const {
     Path ro_data_dat = replace_extension(m_tokenizer.source_file(), FSCHAR(".dat"));
     FILE* fp = fopen(ro_data_bin.string().data(), "wb");
     if (!fp) { return false; }
-    fwrite(m_ro_data, 1, current_address, fp);
-    fclose(fp);
+    ARLib::fwrite(m_ro_data, 1, current_address, fp);
+    ARLib::fclose(fp);
     fp = fopen(ro_data_dat.string().data(), "w");
     const uint64_t* data = reinterpret_cast<const uint64_t*>(m_ro_data);
     for (size_t i = 0; i < current_address / sizeof(uint64_t); ++i) {
-        fprintf(fp, "%016llx\n", data[i]);
+        ARLib::fprintf(fp, "%016llx\n", data[i]);
     }
-    fclose(fp);
+    ARLib::fclose(fp);
     return true;
 }
 void Parser::dump_instructions() const {
     for (const auto& instruction : instructions()) {
         char buf[10]{};
-        int ret = snprintf(buf, sizeof(buf), "0x%04X: ", instruction.address());
+        int ret = ARLib::snprintf(buf, sizeof(buf), "0x%04X: ", instruction.address());
         buf[ret] = '\0';
         Printer::print("{}{}", StringView{buf}, instruction);
     }
@@ -446,7 +446,7 @@ void Parser::encode_instructions() const {
     Path instruction_file = replace_extension(m_tokenizer.source_file(), FSCHAR(".cod"));
     FILE* fp = fopen(instruction_file.string().data(), "w");
     for (const auto& insn : m_instructions) {
-        fprintf(fp, "%08x\n", insn.encode());
+        ARLib::fprintf(fp, "%08x\n", insn.encode());
     }
-    fclose(fp);
+    ARLib::fclose(fp);
 }

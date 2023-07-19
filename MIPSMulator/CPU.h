@@ -41,19 +41,19 @@ class CPU {
     auto read(uint64_t addr) {
         if constexpr (S == 1) {
             uint8_t val = 0;
-            memcpy(&val, m_ro_data.data_raw() + addr, sizeof(uint8_t));
+            ARLib::memcpy(&val, m_ro_data.data_raw() + addr, sizeof(uint8_t));
             return val;
         } else if constexpr (S == 2) {
             uint16_t val = 0;
-            memcpy(&val, m_ro_data.data_raw() + addr, sizeof(uint16_t));
+            ARLib::memcpy(&val, m_ro_data.data_raw() + addr, sizeof(uint16_t));
             return val;
         } else if constexpr (S == 4) {
             uint32_t val = 0;
-            memcpy(&val, m_ro_data.data_raw() + addr, sizeof(uint32_t));
+            ARLib::memcpy(&val, m_ro_data.data_raw() + addr, sizeof(uint32_t));
             return val;
         } else if constexpr (S == 8) {
             uint64_t val = 0;
-            memcpy(&val, m_ro_data.data_raw() + addr, sizeof(uint64_t));
+            ARLib::memcpy(&val, m_ro_data.data_raw() + addr, sizeof(uint64_t));
             return val;
         } else {
             COMPTIME_ASSERT("Invalid size");
@@ -67,7 +67,7 @@ class CPU {
             return val;
         } else if constexpr (S == 8) {
             double val = 0;
-            memcpy(&val, m_ro_data.data_raw() + addr, sizeof(double));
+            ARLib::memcpy(&val, m_ro_data.data_raw() + addr, sizeof(double));
             return val;
         } else {
             COMPTIME_ASSERT("Invalid size");
@@ -118,6 +118,6 @@ class CPU {
     void dump_state();
     void dump_memory();
     ~CPU() {
-        if (m_log_file) fclose(m_log_file);
+        if (m_log_file) ARLib::fclose(m_log_file);
     }
 };

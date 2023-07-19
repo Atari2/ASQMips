@@ -12,10 +12,9 @@
             "cwd": "${workspaceFolder}",
             "program": "${workspaceFolder}/build/ASQMips/ASQMips.exe",
             "args": [
-                "-d",
-                "sample.s"
-            ],
-            "console": "integratedTerminal"
+                "--rodata",
+                "tests/all_instructions.s"
+            ]
         },
         {
             "type": "cppvsdbg",
@@ -26,11 +25,10 @@
             "program": "${workspaceFolder}/build/MIPSMulator/MIPSMulator.exe",
             "args": [
                 "--rodata",
-                "expected.dat",
+                "tests/all_instructions.dat",
                 "--code",
-                "expected.cod"
-            ],
-            "console": "integratedTerminal"
+                "tests/all_instructions.cod"
+            ]
         }
     ]
 }

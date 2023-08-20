@@ -13,7 +13,7 @@ DiscardResult<FileError> InstructionData::load(const Path& p) {
         TRY_SET(val, StrViewToUInt(line.view(), 16));
         instructions.append(Instruction{val});
     }
-    return FileError{};
+    return {};
 }
 MAKE_FANCY_ENUM(InsType, uint8_t, Reg, Imm, Fp, SMTC1, SMFC1, SBC1T, SBC1F);
 MAKE_FANCY_ENUM(FPIns, uint8_t, ADD_D = 0, SUB_D = 1, MUL_D = 2, DIV_D = 3, MOV_D = 6, CVT_D_L = 33, CVT_L_D = 37,

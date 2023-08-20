@@ -35,7 +35,7 @@ int main(int argc, char** argv) {
         return EXIT_FAILURE;
     }
     CPU cpu{};
-    if (auto m_err = cpu.initialize(rodata_file, code_file); m_err.is_error()) {
+    if (auto m_err = cpu.initialize(code_file, rodata_file); m_err.is_error()) {
         Printer::print("Error initializing CPU: {}", m_err.to_error());
         return EXIT_FAILURE;
     };
